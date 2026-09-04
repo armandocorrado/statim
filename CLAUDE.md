@@ -145,7 +145,7 @@ npm run dev              # oppure: composer run dev
 php artisan test         # Pest, SQLite in-memory
 ```
 
-Utenti demo dopo il seeder (password `password` per tutti):
+Utenti demo dopo il seeder (password `medcare!wild` per tutti):
 `admin@rossi.test`, `dentista@rossi.test`, `segreteria@rossi.test` (tenant
 Studio Rossi) e gli equivalenti `@bianchi.test` (tenant Studio Bianchi) —
 utili per verificare manualmente l'isolamento tra tenant.

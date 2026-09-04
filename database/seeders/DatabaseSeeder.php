@@ -7,10 +7,16 @@ use App\Core\Tenancy\Models\Tenant;
 use App\Core\Users\Support\TenantRoleProvisioner;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Password for every seeded demo user.
+     */
+    private const DEMO_PASSWORD = 'medcare!wild';
+
     /**
      * Seeds two demo tenants so tenant isolation is visible/testable manually:
      * logging in as Studio Rossi must never show Studio Bianchi's patients.
@@ -39,6 +45,7 @@ class DatabaseSeeder extends Seeder
             'tenant_id' => $tenant->id,
             'name' => 'Admin',
             'email' => "admin@{$emailDomain}",
+            'password' => Hash::make(self::DEMO_PASSWORD),
         ]);
         $admin->assignRole('admin');
 
@@ -46,6 +53,7 @@ class DatabaseSeeder extends Seeder
             'tenant_id' => $tenant->id,
             'name' => 'Dentista',
             'email' => "dentista@{$emailDomain}",
+            'password' => Hash::make(self::DEMO_PASSWORD),
         ]);
         $dentista->assignRole('dentista');
 
@@ -53,6 +61,7 @@ class DatabaseSeeder extends Seeder
             'tenant_id' => $tenant->id,
             'name' => 'Segreteria',
             'email' => "segreteria@{$emailDomain}",
+            'password' => Hash::make(self::DEMO_PASSWORD),
         ]);
         $segreteria->assignRole('segreteria');
 

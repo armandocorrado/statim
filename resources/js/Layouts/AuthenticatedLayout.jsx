@@ -6,7 +6,8 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
+    const { user, permissions } = usePage().props.auth;
+    const canViewUsers = permissions?.includes('users.view');
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -36,6 +37,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Pazienti
                                 </NavLink>
+                                {canViewUsers && (
+                                    <NavLink
+                                        href={route('users.index')}
+                                        active={route().current('users.*')}
+                                    >
+                                        Utenti
+                                    </NavLink>
+                                )}
                             </div>
                         </div>
 
@@ -146,6 +155,14 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Pazienti
                         </ResponsiveNavLink>
+                        {canViewUsers && (
+                            <ResponsiveNavLink
+                                href={route('users.index')}
+                                active={route().current('users.*')}
+                            >
+                                Utenti
+                            </ResponsiveNavLink>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">

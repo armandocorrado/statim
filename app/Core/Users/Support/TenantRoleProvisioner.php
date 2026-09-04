@@ -23,7 +23,10 @@ class TenantRoleProvisioner
     public static function defaultRolePermissions(): array
     {
         return [
-            'admin' => ['patients.view', 'patients.create', 'patients.update', 'patients.delete'],
+            'admin' => [
+                'patients.view', 'patients.create', 'patients.update', 'patients.delete',
+                'users.view', 'users.invite', 'users.update', 'users.deactivate',
+            ],
             'dentista' => ['patients.view', 'patients.create', 'patients.update'],
             'segreteria' => ['patients.view', 'patients.create', 'patients.update'],
         ];

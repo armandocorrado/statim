@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Core\Audit\Concerns\Auditable;
 use App\Core\Tenancy\Concerns\BelongsToTenant;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,7 +19,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use BelongsToTenant, HasFactory, HasRoles, HasUlids, Notifiable;
+    use Auditable, BelongsToTenant, HasFactory, HasRoles, HasUlids, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -33,5 +34,13 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function auditExcludedAttributes(): array
+    {
+        return ['password', 'remember_token'];
     }
 }
