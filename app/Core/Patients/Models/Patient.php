@@ -3,6 +3,7 @@
 namespace App\Core\Patients\Models;
 
 use App\Core\Audit\Concerns\Auditable;
+use App\Core\Patients\Enums\PatientSource;
 use App\Core\Tenancy\Concerns\BelongsToTenant;
 use App\Models\User;
 use Database\Factories\PatientFactory;
@@ -12,11 +13,16 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'first_name', 'last_name', 'date_of_birth', 'gender',
-    'fiscal_code', 'email', 'phone', 'address', 'notes', 'is_active',
+    'first_name', 'last_name', 'date_of_birth', 'gender', 'birth_place',
+    'fiscal_code', 'email', 'mobile_phone', 'landline_phone',
+    'address_street', 'address_postal_code', 'address_city', 'address_province',
+    'residence_street', 'residence_postal_code', 'residence_city', 'residence_province',
+    'vat_number', 'source', 'guardian_patient_id', 'guardian_relationship',
+    'notes', 'is_active',
 ])]
 class Patient extends Model
 {
@@ -32,10 +38,18 @@ class Patient extends Model
         return [
             'date_of_birth' => 'date',
             'is_active' => 'boolean',
+            'source' => PatientSource::class,
+            // Cifrati: dati di contatto/identificativi a bassa esigenza di
+            // filtro SQL. address_postal_code/city/province e
+            // residence_postal_code/city/province restano in chiaro apposta
+            // — servono a interrogazioni tipo "pazienti per città".
             'fiscal_code' => 'encrypted',
             'email' => 'encrypted',
-            'phone' => 'encrypted',
-            'address' => 'encrypted',
+            'mobile_phone' => 'encrypted',
+            'landline_phone' => 'encrypted',
+            'address_street' => 'encrypted',
+            'residence_street' => 'encrypted',
+            'vat_number' => 'encrypted',
             'notes' => 'encrypted',
         ];
     }
@@ -48,6 +62,22 @@ class Patient extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Tutore/referente/intestatario fatture, se diverso dal paziente stesso.
+     */
+    public function guardian(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'guardian_patient_id');
+    }
+
+    /**
+     * Pazienti (tipicamente minori) di cui questo paziente è il tutore/referente.
+     */
+    public function dependents(): HasMany
+    {
+        return $this->hasMany(self::class, 'guardian_patient_id');
     }
 
     public function fullName(): string

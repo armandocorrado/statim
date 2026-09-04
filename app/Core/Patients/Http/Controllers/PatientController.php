@@ -59,7 +59,7 @@ class PatientController extends Controller
         $this->authorize('view', $patient);
 
         return Inertia::render('Patients/Show', [
-            'patient' => $patient,
+            'patient' => $patient->load('guardian'),
         ]);
     }
 

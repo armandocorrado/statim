@@ -11,6 +11,22 @@ function Field({ label, value }) {
     );
 }
 
+const PATIENT_SOURCE_LABELS = {
+    passaparola: 'Passaparola',
+    campagna_social: 'Campagna social',
+    google: 'Google',
+    sito: 'Sito web',
+    invio_medico: 'Invio da medico',
+    altro: 'Altro',
+};
+
+function formatAddress(street, postalCode, city, province) {
+    const parts = [street, [postalCode, city].filter(Boolean).join(' '), province]
+        .filter(Boolean);
+
+    return parts.length ? parts.join(', ') : null;
+}
+
 export default function Show({ patient }) {
     const { delete: destroy, processing } = useForm();
 
@@ -46,13 +62,47 @@ export default function Show({ patient }) {
                                 value={patient.date_of_birth}
                             />
                             <Field label="Sesso" value={patient.gender} />
+                            <Field label="Luogo di nascita" value={patient.birth_place} />
                             <Field
                                 label="Codice fiscale"
                                 value={patient.fiscal_code}
                             />
                             <Field label="Email" value={patient.email} />
-                            <Field label="Telefono" value={patient.phone} />
-                            <Field label="Indirizzo" value={patient.address} />
+                            <Field label="Cellulare" value={patient.mobile_phone} />
+                            <Field label="Telefono fisso" value={patient.landline_phone} />
+                            <Field
+                                label="Domicilio"
+                                value={formatAddress(
+                                    patient.address_street,
+                                    patient.address_postal_code,
+                                    patient.address_city,
+                                    patient.address_province,
+                                )}
+                            />
+                            <Field
+                                label="Residenza"
+                                value={formatAddress(
+                                    patient.residence_street,
+                                    patient.residence_postal_code,
+                                    patient.residence_city,
+                                    patient.residence_province,
+                                )}
+                            />
+                            <Field label="Partita IVA" value={patient.vat_number} />
+                            <Field
+                                label="Fonte"
+                                value={
+                                    patient.source
+                                        ? PATIENT_SOURCE_LABELS[patient.source]
+                                        : null
+                                }
+                            />
+                            {patient.guardian && (
+                                <Field
+                                    label="Tutore/referente"
+                                    value={`${patient.guardian.first_name} ${patient.guardian.last_name}${patient.guardian_relationship ? ` (${patient.guardian_relationship})` : ''}`}
+                                />
+                            )}
                             <div className="sm:col-span-2">
                                 <Field label="Note" value={patient.notes} />
                             </div>

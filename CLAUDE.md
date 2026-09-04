@@ -162,6 +162,44 @@ tenant.** Non fidarsi mai della sola global scope.
   problema, considerare un cast custom che confronta il plaintext prima di
   marcare dirty.
 
+## Anagrafica paziente (`Patient`)
+
+Solo dati che identificano/descrivono la persona — nessun dato clinico
+(quello starà nel verticale) e nessuno "storico" (si aggancia da altre
+entità, non si duplica qui).
+
+- **Cifratura selettiva**: solo i sotto-campi "via" di domicilio/residenza
+  (`address_street`, `residence_street`) e i contatti/identificativi
+  (`mobile_phone`, `landline_phone`, `email`, `fiscal_code`, `vat_number`,
+  `notes`) usano il cast `encrypted`. CAP/città/provincia restano in
+  chiaro **di proposito**, per poter filtrare via SQL (es. "pazienti per
+  città") senza dover decifrare ogni riga in memoria.
+- **Codice fiscale** (`App\Core\Patients\Rules\ValidFiscalCode`): valida
+  solo formato (16 caratteri, tollerante all'omocodia) + carattere di
+  controllo (algoritmo autoconsistente, tabelle verificate contro un
+  esempio numerico pubblicato). **Non verifica** che il codice corrisponda
+  davvero a cognome/nome/data di nascita/sesso/luogo di nascita — quel
+  controllo richiederebbe una tabella dei codici catastali dei ~8000
+  comuni italiani (+ esteri) ed è stato deliberatamente rimandato.
+- **`source`** (fonte di provenienza): enum applicativo
+  `App\Core\Patients\Enums\PatientSource`, mai testo libero — serve per
+  KPI di acquisizione future.
+- **Tutore/referente** (`guardian_patient_id` + `guardian_relationship`):
+  self-relazione su `Patient`, verificata tenant-scoped e mai
+  auto-referenziale (vedi `UpdatePatientRequest`). Copre **sia** il tutore
+  di un paziente minore **sia** un intestatario fattura diverso dal
+  paziente per un adulto — stessa relazione, non duplicata. Il caso
+  "intestatario azienda" (non una persona/paziente) è stato
+  deliberatamente rimandato alla fase Fatturazione. Nessuna UI di
+  selezione tutore ancora (serve un componente di ricerca pazienti,
+  fuori scope per questa passata) — il campo è supportato end-to-end nel
+  backend, mostrato in sola lettura in `Patients/Show.jsx` se già
+  valorizzato via API/tinker.
+- **Deliberatamente assente**: "prima visita" (si deriva dal futuro
+  modulo Agenda — prima data appuntamento — non è un campo da mantenere a
+  mano su `Patient`); consensi (struttura separata, punto 3 della
+  roadmap); contatti social (dimensione marketing, non anagrafica).
+
 ## Convenzioni
 
 - **Chiavi primarie**: ULID (`HasUlids`) su `tenants`, `users`, `patients`,
