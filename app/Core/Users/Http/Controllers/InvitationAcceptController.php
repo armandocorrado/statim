@@ -2,6 +2,7 @@
 
 namespace App\Core\Users\Http\Controllers;
 
+use App\Core\Audit\Support\AuditRecorder;
 use App\Core\Users\Http\Requests\AcceptInvitationRequest;
 use App\Core\Users\Models\Invitation;
 use App\Http\Controllers\Controller;
@@ -50,6 +51,11 @@ class InvitationAcceptController extends Controller
 
             app(PermissionRegistrar::class)->setPermissionsTeamId($invitation->tenant_id);
             $user->assignRole($invitation->role);
+
+            // No authenticated actor here (the invitee is self-activating a
+            // guest request) — user_id is correctly null; what matters is
+            // that the role grant itself lands in the audit trail.
+            AuditRecorder::record($user, 'role_assigned', [], ['role' => [$invitation->role]]);
 
             $invitation->accepted_at = now();
             $invitation->save();

@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Audit\Models\AuditLog;
 use App\Core\Tenancy\Models\Tenant;
 use App\Core\Users\Models\Invitation;
 use App\Core\Users\Support\TenantRoleProvisioner;
@@ -15,7 +16,7 @@ function createInvitationWithToken(Tenant $tenant, array $overrides = []): array
     $invitation = Invitation::factory()->create(array_merge([
         'tenant_id' => $tenant->id,
         'email' => 'invitato@rossi.test',
-        'role' => 'utente',
+        'role' => 'segreteria',
         'token_hash' => hash('sha256', $plainTextToken),
         'expires_at' => now()->addDays(7),
         'accepted_at' => null,
@@ -42,9 +43,17 @@ test('a valid invitation token creates and logs in an active user with the invit
     expect($user->tenant_id)->toBe($tenant->id)
         ->and($user->is_active)->toBeTrue()
         ->and($user->email_verified_at)->not->toBeNull()
-        ->and($user->getRoleNames()->all())->toBe(['utente']);
+        ->and($user->getRoleNames()->all())->toBe(['segreteria']);
 
     expect($invitation->fresh()->accepted_at)->not->toBeNull();
+
+    $log = AuditLog::where('action', 'role_assigned')
+        ->where('auditable_id', $user->id)
+        ->firstOrFail();
+
+    expect($log->tenant_id)->toBe($tenant->id)
+        ->and($log->user_id)->toBeNull()
+        ->and($log->new_values)->toBe(['role' => ['segreteria']]);
 });
 
 test('an expired invitation token is rejected', function () {

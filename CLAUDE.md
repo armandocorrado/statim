@@ -61,7 +61,7 @@ passato/bindato esplicitamente.
 `BelongsToTenant` e avere una Policy con il controllo esplicito del
 tenant.** Non fidarsi mai della sola global scope.
 
-## RBAC (spatie/laravel-permission)
+## RBAC (spatie/laravel-permission) — ruoli FISSI
 
 - Pacchetto con feature **teams**, `team_foreign_key` rimappato a
   `tenant_id` (`config/permission.php`): i ruoli sono per-tenant (ogni
@@ -71,16 +71,72 @@ tenant.** Non fidarsi mai della sola global scope.
   editate a mano nella migration pubblicata (`ulid` invece di
   `unsignedBigInteger`) per combaciare con le PK ulid di `tenants`/`users`
   — se si rigenera la migration da zero, questo va rifatto.
-- Ruoli di default (`App\Core\Users\Support\TenantRoleProvisioner`):
-  `admin` (tutti i permessi paziente + gestione utenti) e `utente`
-  (view/create/update pazienti, non delete, nessuna gestione utenti) — due
-  soli tipi di utente per studio. Le Policy controllano permessi
-  (`$user->can('patients.delete')`), mai il nome del ruolo direttamente —
-  così un tenant potrà in futuro personalizzare i propri ruoli senza
-  toccare codice.
+- **Principio: minimizzazione GDPR e protezione by design.** I ruoli sono
+  fissi nel codice, a permessi predefiniti: l'Admin studio assegna ruoli
+  predefiniti a utenti del proprio studio, ma **nessuno** — nemmeno lui —
+  può modificare i permessi di un ruolo. Non esiste (e non deve mai
+  esistere) un endpoint che editi il mapping ruolo→permessi: l'unica fonte
+  di verità è `App\Core\Users\Support\TenantRoleProvisioner::defaultRolePermissions()`.
+  Le Policy controllano sempre permessi (`$user->can('patients.delete')`),
+  mai il nome del ruolo direttamente.
+- **5 ruoli fissi per studio**: `admin` (accesso completo: dati clinici,
+  economia, team, gestione utenti), `odontoiatra` (cartella clinica e
+  odontogramma completi, piani di cura/preventivi, propria agenda, propria
+  produzione — niente fatturazione/incassi), `igienista` (accesso clinico
+  parziale, solo sezione igiene, propria agenda — niente fatturazione),
+  `aso` (sola consultazione di agenda e scheda paziente — niente modifica
+  dati clinici, niente economia), `segreteria` (anagrafica, agenda
+  completa, fatturazione/incassi, CRM, gestione amministrativa di
+  preventivi e consensi — **nessun** accesso a cartella/odontogramma).
+  Solo `admin` ha permessi `users.*`: nessun altro ruolo gestisce utenti o
+  assegna ruoli.
+- **Confine Core/verticale**: `odontoiatra`/`igienista` e i permessi
+  `clinical_records.*`/`odontogram.*` appartengono al verticale
+  odontoiatrico, non al core. `TenantRoleProvisioner` (Core) non li
+  conosce: espone un punto di estensione, `TenantRoleProvisioner::extend(string $key, callable $contributor)`,
+  che fa merge additivo dei permessi per ruolo (chiave = idempotenza tra
+  riavvii/test). `App\Modules\Dental\Providers\DentalServiceProvider`
+  (registrato in `bootstrap/providers.php`) chiama `extend()` nel suo
+  `boot()` per innestare i ruoli clinici e per aggiungere i permessi
+  clinici al ruolo `admin` — così Core non importa mai nulla da
+  `App\Modules\Dental`, ma il verticale può contribuire al catalogo.
+- **Vincolo invalicabile**, verificato da un test di regressione
+  (`tests/Feature/RoleGovernanceTest.php`): nessun ruolo non clinico
+  (`aso`, `segreteria` — `admin` è l'eccezione esplicita, ha accesso a
+  tutto) può mai ricevere un permesso `clinical_records.*`, `odontogram.*`
+  o `treatment_plans.clinical.manage`.
 - Provisioning di un nuovo tenant: chiamare
   `TenantRoleProvisioner::provisionDefaults($tenant)` prima di assegnare
   ruoli agli utenti di quel tenant.
+- **Super-admin di piattaforma**: rinviato. Non esiste ancora nessuna
+  rotta/UI di piattaforma. Quando servirà, **non** sarà un ruolo
+  tenant-scoped (romperebbe il vincolo mono-tenant di `User` e
+  mescolerebbe due domini di autorizzazione) — sarà un modello/guard
+  separato da `App\Models\User`, così "nessun accesso ai dati clinici" è
+  garantito dalla query stessa, non solo da un permesso mancante.
+
+### Vincoli architetturali futuri (registrati ora, da NON costruire in questa fase)
+
+- **Squadre cliniche** (nome: *squadra clinica* / `clinical_team` nel
+  codice — **mai** "team", già usato per il tenant nelle spatie teams,
+  per evitare collisione di nomi): uno studio ha più medici con
+  collaboratori diversi organizzati in squadre; un ASO o un igienista deve
+  vedere le agende **solo** degli operatori della propria squadra, non di
+  tutto lo studio. Non risolvibile col permesso a grana grossa
+  `agenda.view.all`: servirà un modello relazionale molti-a-molti
+  (raggruppamento di operatori/collaboratori dello stesso tenant) e una
+  policy che filtri le agende per appartenenza alla squadra. Da costruire
+  insieme al modulo Agenda — oggi `aso`/`igienista` restano con
+  `agenda.view.*`/`agenda.manage.own` a grana grossa come stato interinale.
+- **KPI e spettanze per operatore** (indipendenti dalle squadre): le
+  metriche del singolo operatore (produzione, fatturato, accettazione
+  preventivi) e le spettanze dei collaboratori si basano sul legame
+  prestazione→operatore, non sull'appartenenza a una squadra clinica.
+  Vincolo da rispettare quando si costruirà il modulo
+  prestazioni/cartella clinica: ogni prestazione deve **sempre**
+  registrare l'operatore esecutore, ed eventualmente i collaboratori con
+  la rispettiva quota — le squadre servono solo per la visibilità
+  dell'agenda, mai per il calcolo di produzione/compensi.
 
 ## Audit log (GDPR art. 9)
 
@@ -141,12 +197,13 @@ npm install
 cp .env.example .env   # poi configurare DB_* per Postgres locale
 php artisan key:generate
 php artisan migrate
-php artisan db:seed     # crea 2 tenant demo con utenti admin/utente
+php artisan db:seed     # crea 2 tenant demo con un utente per ciascuno dei 5 ruoli
 npm run dev              # oppure: composer run dev
 php artisan test         # Pest, SQLite in-memory
 ```
 
 Utenti demo dopo il seeder (password `medcare!wild` per tutti):
-`admin@rossi.test`, `utente@rossi.test` (tenant Studio Rossi) e gli
+`admin@rossi.test`, `odontoiatra@rossi.test`, `igienista@rossi.test`,
+`aso@rossi.test`, `segreteria@rossi.test` (tenant Studio Rossi) e gli
 equivalenti `@bianchi.test` (tenant Studio Bianchi) — utili per verificare
-manualmente l'isolamento tra tenant.
+manualmente l'isolamento tra tenant e i permessi per ruolo.

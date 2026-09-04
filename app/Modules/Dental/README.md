@@ -1,9 +1,15 @@
 # Modulo Dental (verticale odontoiatrico)
 
 Cartella riservata per il verticale clinico odontoiatrico (cartella clinica,
-odontogramma, piani di cura). Vuota per design nella fase di walking
-skeleton: nessuna astrazione viene costruita finché non esiste un secondo
-verticale o requisiti concreti per questo.
+odontogramma, piani di cura). Ancora vuota di modelli/controller nella fase
+di walking skeleton: nessuna astrazione viene costruita finché non esiste un
+secondo verticale o requisiti concreti per questo.
+
+Il primo contenuto reale è `Providers/DentalServiceProvider.php`: innesta i
+ruoli clinici (`odontoiatra`, `igienista`) e i permessi su cartella/
+odontogramma nel catalogo RBAC del core tramite
+`TenantRoleProvisioner::extend()`, senza che il core importi nulla da qui —
+vedi `App\Core\Users\Support\TenantRoleProvisioner`.
 
 ## Regola di confine
 

@@ -2,6 +2,7 @@
 
 namespace App\Core\Users\Models;
 
+use App\Core\Audit\Concerns\Auditable;
 use App\Core\Tenancy\Concerns\BelongsToTenant;
 use App\Models\User;
 use Database\Factories\InvitationFactory;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['tenant_id', 'email', 'role', 'token_hash', 'invited_by', 'expires_at'])]
 class Invitation extends Model
 {
-    use BelongsToTenant, HasFactory, HasUlids;
+    use Auditable, BelongsToTenant, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {
@@ -43,5 +44,13 @@ class Invitation extends Model
     public function isAccepted(): bool
     {
         return $this->accepted_at !== null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function auditExcludedAttributes(): array
+    {
+        return ['token_hash'];
     }
 }

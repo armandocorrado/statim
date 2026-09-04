@@ -14,7 +14,15 @@ class AuditRecorder
      */
     public static function record(Model $model, string $action, array $old, array $new): void
     {
-        if (! app()->bound('currentTenant')) {
+        // Prefer the model's own tenant_id (every Auditable model uses
+        // BelongsToTenant) over the request-scoped `currentTenant` binding —
+        // some auditable actions happen outside a tenant-identified request,
+        // e.g. a guest accepting an invitation, where IdentifyTenant never
+        // runs but the model itself still carries its tenant unambiguously.
+        $tenantId = $model->getAttribute('tenant_id')
+            ?? (app()->bound('currentTenant') ? app('currentTenant')->id : null);
+
+        if (! $tenantId) {
             return;
         }
 
@@ -30,7 +38,7 @@ class AuditRecorder
         }
 
         AuditLog::create([
-            'tenant_id' => app('currentTenant')->id,
+            'tenant_id' => $tenantId,
             'user_id' => auth()->id(),
             'action' => $action,
             'auditable_type' => $model->getMorphClass(),

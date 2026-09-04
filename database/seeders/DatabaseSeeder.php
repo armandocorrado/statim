@@ -41,21 +41,29 @@ class DatabaseSeeder extends Seeder
         $registrar = app(PermissionRegistrar::class);
         $registrar->setPermissionsTeamId($tenant->id);
 
-        $admin = User::factory()->create([
-            'tenant_id' => $tenant->id,
-            'name' => 'Admin',
-            'email' => "admin@{$emailDomain}",
-            'password' => Hash::make(self::DEMO_PASSWORD),
-        ]);
-        $admin->assignRole('admin');
+        $demoUsers = [
+            'admin' => 'Admin',
+            'odontoiatra' => 'Odontoiatra',
+            'igienista' => 'Igienista',
+            'aso' => 'Aso',
+            'segreteria' => 'Segreteria',
+        ];
 
-        $utente = User::factory()->create([
-            'tenant_id' => $tenant->id,
-            'name' => 'Utente',
-            'email' => "utente@{$emailDomain}",
-            'password' => Hash::make(self::DEMO_PASSWORD),
-        ]);
-        $utente->assignRole('utente');
+        $admin = null;
+
+        foreach ($demoUsers as $role => $displayName) {
+            $user = User::factory()->create([
+                'tenant_id' => $tenant->id,
+                'name' => $displayName,
+                'email' => "{$role}@{$emailDomain}",
+                'password' => Hash::make(self::DEMO_PASSWORD),
+            ]);
+            $user->assignRole($role);
+
+            if ($role === 'admin') {
+                $admin = $user;
+            }
+        }
 
         Patient::factory(5)->create([
             'tenant_id' => $tenant->id,

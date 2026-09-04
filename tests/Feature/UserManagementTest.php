@@ -11,25 +11,25 @@ test('admin can invite a new user', function () {
 
     $response = $this->actingAs($admin)->post('/users/invitations', [
         'email' => 'nuovo@rossi.test',
-        'role' => 'utente',
+        'role' => 'segreteria',
     ]);
 
     $response->assertRedirect(route('users.index'));
     $this->assertDatabaseHas('invitations', [
         'tenant_id' => $tenant->id,
         'email' => 'nuovo@rossi.test',
-        'role' => 'utente',
+        'role' => 'segreteria',
         'invited_by' => $admin->id,
     ]);
 });
 
-test('utente cannot invite a new user', function () {
+test('segreteria cannot invite a new user', function () {
     $tenant = Tenant::factory()->create();
-    $utente = userForTenant($tenant, 'utente');
+    $segreteria = userForTenant($tenant, 'segreteria');
 
-    $response = $this->actingAs($utente)->post('/users/invitations', [
+    $response = $this->actingAs($segreteria)->post('/users/invitations', [
         'email' => 'nuovo@rossi.test',
-        'role' => 'utente',
+        'role' => 'segreteria',
     ]);
 
     $response->assertForbidden();
@@ -43,7 +43,7 @@ test('inviting an email that already belongs to a user is rejected', function ()
 
     $response = $this->actingAs($admin)->post('/users/invitations', [
         'email' => $existing->email,
-        'role' => 'utente',
+        'role' => 'segreteria',
     ]);
 
     $response->assertInvalid(['email']);
@@ -60,7 +60,7 @@ test('inviting an email with a pending unexpired invitation is rejected', functi
 
     $response = $this->actingAs($admin)->post('/users/invitations', [
         'email' => 'pending@rossi.test',
-        'role' => 'utente',
+        'role' => 'segreteria',
     ]);
 
     $response->assertInvalid(['email']);
@@ -87,7 +87,7 @@ test('admin can revoke a pending invitation only for their own tenant', function
 test('changing a user role is recorded in the audit log without leaking the password', function () {
     $tenant = Tenant::factory()->create();
     $admin = userForTenant($tenant, 'admin');
-    $target = userForTenant($tenant, 'utente');
+    $target = userForTenant($tenant, 'segreteria');
 
     $response = $this->actingAs($admin)->patch("/users/{$target->id}/role", [
         'role' => 'admin',
@@ -118,7 +118,7 @@ test('admin cannot deactivate their own account', function () {
 test('admin can deactivate and reactivate another user', function () {
     $tenant = Tenant::factory()->create();
     $admin = userForTenant($tenant, 'admin');
-    $target = userForTenant($tenant, 'utente');
+    $target = userForTenant($tenant, 'segreteria');
 
     $this->actingAs($admin)->patch("/users/{$target->id}/deactivate")
         ->assertRedirect(route('users.index'));
@@ -132,11 +132,11 @@ test('admin can deactivate and reactivate another user', function () {
 test('the users nav link is only shared for a user with the users.view permission', function () {
     $tenant = Tenant::factory()->create();
     $admin = userForTenant($tenant, 'admin');
-    $utente = userForTenant($tenant, 'utente');
+    $segreteria = userForTenant($tenant, 'segreteria');
 
     $this->actingAs($admin)->get('/dashboard')
         ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($permissions) => collect($permissions)->contains('users.view')));
 
-    $this->actingAs($utente)->get('/dashboard')
+    $this->actingAs($segreteria)->get('/dashboard')
         ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($permissions) => ! collect($permissions)->contains('users.view')));
 });
