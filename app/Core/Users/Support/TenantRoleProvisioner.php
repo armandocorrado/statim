@@ -27,7 +27,7 @@ class TenantRoleProvisioner
                 'patients.view', 'patients.create', 'patients.update', 'patients.delete',
                 'users.view', 'users.invite', 'users.update', 'users.deactivate',
             ],
-            'collaboratore' => ['patients.view', 'patients.create', 'patients.update'],
+            'utente' => ['patients.view', 'patients.create', 'patients.update'],
         ];
     }
 

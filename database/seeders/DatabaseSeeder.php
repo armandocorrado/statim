@@ -49,13 +49,13 @@ class DatabaseSeeder extends Seeder
         ]);
         $admin->assignRole('admin');
 
-        $collaboratore = User::factory()->create([
+        $utente = User::factory()->create([
             'tenant_id' => $tenant->id,
-            'name' => 'Collaboratore',
-            'email' => "collaboratore@{$emailDomain}",
+            'name' => 'Utente',
+            'email' => "utente@{$emailDomain}",
             'password' => Hash::make(self::DEMO_PASSWORD),
         ]);
-        $collaboratore->assignRole('collaboratore');
+        $utente->assignRole('utente');
 
         Patient::factory(5)->create([
             'tenant_id' => $tenant->id,

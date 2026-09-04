@@ -72,7 +72,7 @@ tenant.** Non fidarsi mai della sola global scope.
   `unsignedBigInteger`) per combaciare con le PK ulid di `tenants`/`users`
   — se si rigenera la migration da zero, questo va rifatto.
 - Ruoli di default (`App\Core\Users\Support\TenantRoleProvisioner`):
-  `admin` (tutti i permessi paziente + gestione utenti) e `collaboratore`
+  `admin` (tutti i permessi paziente + gestione utenti) e `utente`
   (view/create/update pazienti, non delete, nessuna gestione utenti) — due
   soli tipi di utente per studio. Le Policy controllano permessi
   (`$user->can('patients.delete')`), mai il nome del ruolo direttamente —
@@ -141,12 +141,12 @@ npm install
 cp .env.example .env   # poi configurare DB_* per Postgres locale
 php artisan key:generate
 php artisan migrate
-php artisan db:seed     # crea 2 tenant demo con utenti admin/collaboratore
+php artisan db:seed     # crea 2 tenant demo con utenti admin/utente
 npm run dev              # oppure: composer run dev
 php artisan test         # Pest, SQLite in-memory
 ```
 
 Utenti demo dopo il seeder (password `medcare!wild` per tutti):
-`admin@rossi.test`, `collaboratore@rossi.test` (tenant Studio Rossi) e gli
+`admin@rossi.test`, `utente@rossi.test` (tenant Studio Rossi) e gli
 equivalenti `@bianchi.test` (tenant Studio Bianchi) — utili per verificare
 manualmente l'isolamento tra tenant.
