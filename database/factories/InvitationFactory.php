@@ -20,7 +20,7 @@ class InvitationFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'email' => fake()->safeEmail(),
-            'role' => 'segreteria',
+            'role' => 'collaboratore',
             'token_hash' => hash('sha256', Str::random(40)),
             'invited_by' => User::factory(),
             'expires_at' => now()->addDays(7),

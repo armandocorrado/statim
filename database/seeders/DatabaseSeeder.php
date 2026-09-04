@@ -49,21 +49,13 @@ class DatabaseSeeder extends Seeder
         ]);
         $admin->assignRole('admin');
 
-        $dentista = User::factory()->create([
+        $collaboratore = User::factory()->create([
             'tenant_id' => $tenant->id,
-            'name' => 'Dentista',
-            'email' => "dentista@{$emailDomain}",
+            'name' => 'Collaboratore',
+            'email' => "collaboratore@{$emailDomain}",
             'password' => Hash::make(self::DEMO_PASSWORD),
         ]);
-        $dentista->assignRole('dentista');
-
-        $segreteria = User::factory()->create([
-            'tenant_id' => $tenant->id,
-            'name' => 'Segreteria',
-            'email' => "segreteria@{$emailDomain}",
-            'password' => Hash::make(self::DEMO_PASSWORD),
-        ]);
-        $segreteria->assignRole('segreteria');
+        $collaboratore->assignRole('collaboratore');
 
         Patient::factory(5)->create([
             'tenant_id' => $tenant->id,

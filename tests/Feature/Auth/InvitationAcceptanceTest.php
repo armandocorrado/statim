@@ -15,7 +15,7 @@ function createInvitationWithToken(Tenant $tenant, array $overrides = []): array
     $invitation = Invitation::factory()->create(array_merge([
         'tenant_id' => $tenant->id,
         'email' => 'invitato@rossi.test',
-        'role' => 'segreteria',
+        'role' => 'collaboratore',
         'token_hash' => hash('sha256', $plainTextToken),
         'expires_at' => now()->addDays(7),
         'accepted_at' => null,
@@ -42,7 +42,7 @@ test('a valid invitation token creates and logs in an active user with the invit
     expect($user->tenant_id)->toBe($tenant->id)
         ->and($user->is_active)->toBeTrue()
         ->and($user->email_verified_at)->not->toBeNull()
-        ->and($user->getRoleNames()->all())->toBe(['segreteria']);
+        ->and($user->getRoleNames()->all())->toBe(['collaboratore']);
 
     expect($invitation->fresh()->accepted_at)->not->toBeNull();
 });

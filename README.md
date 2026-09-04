@@ -39,7 +39,7 @@ php artisan db:seed
 ```
 
 Il seeder crea due tenant demo ("Studio Dentistico Rossi" e "Studio
-Dentistico Bianchi") con utenti admin/dentista/segreteria per ciascuno
+Dentistico Bianchi") con utenti admin/collaboratore per ciascuno
 (password `medcare!wild`), utile per verificare manualmente che i dati di uno
 studio non siano mai visibili all'altro.
 
