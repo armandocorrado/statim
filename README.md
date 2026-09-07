@@ -15,7 +15,7 @@ Per l'architettura, le convenzioni e le decisioni tecniche vedi
 
 ## Stack
 
-- Laravel 13 (PHP 8.3+), PostgreSQL
+- Laravel 13 (PHP 8.3+), MySQL
 - Inertia + React + Tailwind
 - Pest (test)
 - Deploy target: Plesk
@@ -30,7 +30,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Configurare in `.env` la connessione a un database PostgreSQL locale
+Configurare in `.env` la connessione a un database MySQL locale
 (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`):
 
 ```sh
@@ -65,6 +65,6 @@ php artisan test
 ```
 
 I test girano su SQLite in-memory (nessuna dipendenza da un server
-Postgres). Include `tests/Feature/TenantIsolationTest.php`, che verifica
+MySQL). Include `tests/Feature/TenantIsolationTest.php`, che verifica
 che un utente non possa mai vedere, modificare o eliminare i pazienti di
 un altro tenant — nemmeno forzando l'ID nell'URL.

@@ -7,7 +7,7 @@ Gestionale cloud multi-tenant per professioni sanitarie. Fase attuale:
 ## Stack
 
 - Laravel 13 (PHP 8.3 in produzione su Plesk; PHP 8.4 va bene in locale),
-  PostgreSQL, Inertia + React + Tailwind, Pest per i test.
+  MySQL, Inertia + React + Tailwind, Pest per i test.
 - Deploy target: Plesk.
 
 ## Architettura: core trasversale vs verticale clinico
@@ -221,18 +221,30 @@ entità, non si duplica qui).
   in inglese per ora — solo login, dashboard e le pagine Pazienti sono
   state tradotte, essendo l'unico percorso realmente in scope per questo
   walking skeleton.
-- **Query portabili**: il target di produzione è PostgreSQL, ma i test
-  girano su SQLite in-memory (default Laravel/Pest, veloce, nessuna
-  dipendenza esterna). Evitare SQL specifico di Postgres (es. `ilike`) —
-  vedi `PatientController::index()` che usa `whereRaw('LOWER(...) LIKE
-  ?')` invece.
+- **Query portabili**: il target di produzione è MySQL, ma i test girano su
+  SQLite in-memory (default Laravel/Pest, veloce, nessuna dipendenza
+  esterna). Evitare SQL specifico di un solo motore — vedi
+  `PatientController::index()` che usa `whereRaw('LOWER(...) LIKE ?')`
+  invece di `ilike` (Postgres-only). **Migrato da PostgreSQL a MySQL
+  nel 2026-09**: se si trovano ancora riferimenti a `pgsql` in config o
+  `.env.example`, sono residui da correggere, non convenzione attuale.
+- **Caveat MySQL noto**: la migration `create_permission_tables`
+  (spatie/laravel-permission) porta un commento del pacchetto su
+  possibili errori `1071 Specified key was too long` per l'indice
+  composito su `roles` (team_foreign_key ulid + name + guard_name,
+  entrambi `VARCHAR(255)`) sotto InnoDB con `ROW_FORMAT` non `DYNAMIC` /
+  `innodb_large_prefix` disattivato — versioni MySQL/MariaDB datate. In
+  locale (MySQL moderno, DB `curaly`) non si è presentato; se ricompare
+  su un altro ambiente, il fix standard è `Schema::defaultStringLength(191)`
+  in `AppServiceProvider::boot()`, oppure verificare che l'engine abbia
+  `innodb_large_prefix=ON` e `ROW_FORMAT=DYNAMIC`.
 
 ## Comandi utili
 
 ```sh
 composer install
 npm install
-cp .env.example .env   # poi configurare DB_* per Postgres locale
+cp .env.example .env   # poi configurare DB_* per MySQL locale
 php artisan key:generate
 php artisan migrate
 php artisan db:seed     # crea 2 tenant demo con un utente per ciascuno dei 5 ruoli
