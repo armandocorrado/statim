@@ -276,22 +276,36 @@ CORE trasversale: punto d'accesso al paziente, non un semplice calendario
 convergere altri moduli futuri (una futura `Prestazione` potrà referenziare
 `appointment_id`, nullable, senza toccare questo schema).
 
-- **Risorsa**: `operator_id` (`User`) è l'unica risorsa contro cui si
-  previene la sovrapposizione — nessun concetto di "poltrona" distinto
-  nello schema (deliberatamente rimandato, nessun requisito concreto
-  ancora). `patient_id` è **nullable**: un appuntamento senza paziente è
-  un blocco/indisponibilità dell'operatore (pausa, ferie), non serve un
-  flag separato.
+- **Risorsa**: `operator_id`/`assistant_id` (entrambi `User`) sono le due
+  persone che un appuntamento impegna — nessun concetto di "poltrona"
+  distinto nello schema (deliberatamente rimandato, nessun requisito
+  concreto ancora). `patient_id` è **nullable**: un appuntamento senza
+  paziente è un blocco/indisponibilità dell'operatore (pausa, ferie), non
+  serve un flag separato.
 - **`assistant_id`** (`User`, nullable): chi assiste alla poltrona (in
   genere un ASO), distinto da `operator_id` che tratta il paziente —
   legame reale a livello di dati, non solo una convenzione nell'elenco
-  demo. **Non** partecipa al controllo anti-sovrapposizione (solo
-  `operator_id` lo fa): un assistente doppio-prenotato su due odontoiatri
-  in contemporanea non viene bloccato in questa passata. Nelle viste
-  Agenda, l'appuntamento compare sia nella colonna dell'operatore sia in
-  quella dell'assistente (filtro lato frontend su `operator_id` OR
-  `assistant_id`; lato backend il filtro `operator_id` in query string
-  della vista fa match su entrambi).
+  demo. Nelle viste Agenda, l'appuntamento compare sia nella colonna
+  dell'operatore sia in quella dell'assistente (filtro lato frontend su
+  `operator_id` OR `assistant_id`; lato backend il filtro `operator_id`
+  in query string della vista fa match su entrambi).
+- **Anti-sovrapposizione per persona, non per ruolo**
+  (`App\Core\Agenda\Support\AppointmentOverlapChecker::personIsBusy()`):
+  sia `operator_id` sia `assistant_id` (se valorizzato) partecipano al
+  controllo, e per **ciascuna delle due persone** si verifica che non sia
+  già impegnata in **nessuno dei due ruoli** su un altro appuntamento
+  sovrapposto — non due corsie indipendenti "operatori sovrapposti" /
+  "assistenti sovrapposti". Motivo: la stessa persona potrebbe essere
+  operatore in un appuntamento e assistente in un altro, sovrapposti —
+  due controlli separati per colonna lascerebbero passare questo caso
+  (niente nello schema impedisce di assegnare un odontoiatra come
+  `assistant_id` di un collega). Un appuntamento senza assistente non
+  esegue affatto il secondo controllo. `assistant_id` non può inoltre
+  coincidere con `operator_id` sullo stesso appuntamento (validato a
+  parte, non è un controllo di sovrapposizione — non c'è un "altro
+  appuntamento" da confrontare). Stesso meccanismo a due livelli già
+  documentato sotto (FormRequest + ri-controllo con `lockForUpdate()` in
+  transazione), applicato a entrambe le persone.
 - **`status`**: enum applicativo fisso (`AppointmentStatus`) — guida
   logica reale (query "solo confermati", esclusione dal controllo
   sovrapposizioni), stessa ragione per cui ruoli RBAC e finalità dei

@@ -231,6 +231,9 @@ export default function AppointmentModal({
                     {errors.overlap && (
                         <p className="text-sm text-red-600">{errors.overlap}</p>
                     )}
+                    {errors.assistant_overlap && (
+                        <p className="text-sm text-red-600">{errors.assistant_overlap}</p>
+                    )}
 
                     <div>
                         <InputLabel htmlFor="appointment_type_id" value="Tipo" />

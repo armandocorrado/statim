@@ -6,6 +6,7 @@ use App\Core\Agenda\Enums\AppointmentStatus;
 use App\Core\Agenda\Http\Requests\StoreAppointmentRequest;
 use App\Core\Agenda\Http\Requests\UpdateAppointmentRequest;
 use App\Core\Agenda\Models\Appointment;
+use App\Core\Agenda\Support\AppointmentOverlapChecker;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -50,23 +51,37 @@ class AppointmentController extends Controller
      * FormRequest prima che l'altra scriva. Best-effort su MySQL/InnoDB
      * (gap lock su un range scan indicizzato), non una garanzia assoluta
      * come un vincolo nativo di range-exclusion — vedi CLAUDE.md.
+     *
+     * Controlla operatore e assistente separatamente ma con la stessa
+     * verifica "occupato in qualunque ruolo" (vedi AppointmentOverlapChecker)
+     * — non due corsie indipendenti, altrimenti una stessa persona
+     * operatore in un appuntamento e assistente in un altro sovrapposto
+     * passerebbe inosservata.
      */
     private function rejectIfOverlapping(array $data, string $tenantId, ?string $excluding = null): void
     {
-        $overlaps = Appointment::query()
-            ->where('tenant_id', $tenantId)
-            ->where('operator_id', $data['operator_id'])
-            ->when($excluding, fn ($query) => $query->where('id', '!=', $excluding))
-            ->whereNotIn('status', array_map(fn ($s) => $s->value, AppointmentStatus::excludedFromOverlapCheck()))
-            ->where('start_at', '<', $data['end_at'])
-            ->where('end_at', '>', $data['start_at'])
-            ->lockForUpdate()
-            ->exists();
+        $operatorBusy = AppointmentOverlapChecker::personIsBusy(
+            $tenantId, $data['operator_id'], $data['start_at'], $data['end_at'],
+            excludingAppointmentId: $excluding, lock: true,
+        );
 
-        if ($overlaps) {
+        if ($operatorBusy) {
             throw ValidationException::withMessages([
                 'overlap' => "L'operatore ha già un appuntamento in questa fascia oraria.",
             ]);
+        }
+
+        if (! empty($data['assistant_id'])) {
+            $assistantBusy = AppointmentOverlapChecker::personIsBusy(
+                $tenantId, $data['assistant_id'], $data['start_at'], $data['end_at'],
+                excludingAppointmentId: $excluding, lock: true,
+            );
+
+            if ($assistantBusy) {
+                throw ValidationException::withMessages([
+                    'assistant_overlap' => "L'assistente ha già un appuntamento in questa fascia oraria.",
+                ]);
+            }
         }
     }
 }
