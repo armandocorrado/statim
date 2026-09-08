@@ -3,6 +3,7 @@
 namespace App\Core\Patients\Models;
 
 use App\Core\Audit\Concerns\Auditable;
+use App\Core\Consents\Models\Consent;
 use App\Core\Patients\Enums\PatientSource;
 use App\Core\Tenancy\Concerns\BelongsToTenant;
 use App\Models\User;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
     'first_name', 'last_name', 'date_of_birth', 'gender', 'birth_place',
@@ -26,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 ])]
 class Patient extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids, SoftDeletes;
+    use Auditable, BelongsToTenant, HasFactory, HasUlids, Notifiable, SoftDeletes;
 
     protected static function newFactory(): Factory
     {
@@ -80,8 +82,22 @@ class Patient extends Model
         return $this->hasMany(self::class, 'guardian_patient_id');
     }
 
+    public function consents(): HasMany
+    {
+        return $this->hasMany(Consent::class);
+    }
+
     public function fullName(): string
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Età legale non accertabile (data di nascita assente) = trattato come
+     * maggiorenne — limite noto, non un'inferenza di sicurezza.
+     */
+    public function isMinor(): bool
+    {
+        return $this->date_of_birth !== null && $this->date_of_birth->age < 18;
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Core\Patients\Http\Controllers;
 
+use App\Core\Consents\Enums\ConsentCollectionMethod;
+use App\Core\Consents\Enums\ConsentPurpose;
+use App\Core\Consents\Enums\PolicyVersion;
 use App\Core\Patients\Http\Requests\StorePatientRequest;
 use App\Core\Patients\Http\Requests\UpdatePatientRequest;
 use App\Core\Patients\Models\Patient;
@@ -59,8 +62,22 @@ class PatientController extends Controller
         $this->authorize('view', $patient);
 
         return Inertia::render('Patients/Show', [
-            'patient' => $patient->load('guardian'),
+            'patient' => $patient->load(['guardian', 'consents' => fn ($query) => $query->latest('granted_at')]),
+            'consentOptions' => [
+                'purposes' => self::enumOptions(ConsentPurpose::cases()),
+                'collectionMethods' => self::enumOptions(ConsentCollectionMethod::cases()),
+                'policyVersions' => self::enumOptions(PolicyVersion::cases()),
+            ],
         ]);
+    }
+
+    /**
+     * @param  list<ConsentPurpose|ConsentCollectionMethod|PolicyVersion>  $cases
+     * @return list<array{value: string, label: string}>
+     */
+    private static function enumOptions(array $cases): array
+    {
+        return array_map(fn ($case) => ['value' => $case->value, 'label' => $case->label()], $cases);
     }
 
     public function edit(Patient $patient): Response

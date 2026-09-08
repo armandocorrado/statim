@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Consents\Http\Controllers\ConsentController;
 use App\Core\Patients\Http\Controllers\PatientController;
 use App\Core\Users\Http\Controllers\InvitationAcceptController;
 use App\Core\Users\Http\Controllers\UserController;
@@ -25,6 +26,9 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::resource('patients', PatientController::class);
+
+    Route::post('patients/{patient}/consents', [ConsentController::class, 'store'])->name('patients.consents.store');
+    Route::patch('patients/{patient}/consents/{consent}/revoke', [ConsentController::class, 'revoke'])->name('patients.consents.revoke');
 
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::post('users/invitations', [UserController::class, 'storeInvitation'])->name('users.invitations.store');

@@ -150,11 +150,11 @@ tenant.** Non fidarsi mai della sola global scope.
   finito di bootarsi). Va differito con `static::whenBooted(fn () =>
   static::observe(...))`, come fa il framework stesso per gli attributi
   `#[ObservedBy]`. Vedi `Auditable::bootAuditable()`.
-- I campi PII di `Patient` (`fiscal_code`, `email`, `phone`, `address`,
-  `notes`) usano il cast `encrypted` di Eloquent: `old_values`/`new_values`
-  nell'audit log per quei campi contengono quindi ciphertext, non
-  plaintext — è intenzionale (l'audit trail non deve essere un secondo
-  posto dove trapela il dato in chiaro).
+- I campi PII cifrati di `Patient` (vedi sezione Anagrafica sotto) usano il
+  cast `encrypted` di Eloquent: `old_values`/`new_values` nell'audit log
+  per quei campi contengono quindi ciphertext, non plaintext — è
+  intenzionale (l'audit trail non deve essere un secondo posto dove
+  trapela il dato in chiaro).
 - **Caveat noto**: il cast `encrypted` re-cifra con IV casuale ad ogni
   assegnazione, quindi `getDirty()`/`getChanges()` può segnalare "modifica"
   anche quando il valore in chiaro non è cambiato (riassegnazione dello
@@ -197,8 +197,77 @@ entità, non si duplica qui).
   valorizzato via API/tinker.
 - **Deliberatamente assente**: "prima visita" (si deriva dal futuro
   modulo Agenda — prima data appuntamento — non è un campo da mantenere a
-  mano su `Patient`); consensi (struttura separata, punto 3 della
-  roadmap); contatti social (dimensione marketing, non anagrafica).
+  mano su `Patient`); consensi (struttura separata, vedi sotto); contatti
+  social (dimensione marketing, non anagrafica).
+
+## Consensi e privacy (`App\Core\Consents`)
+
+CORE trasversale (non odontoiatrico): governa il **diritto di usare** i
+contatti già presenti su `Patient` (cellulare, email). Principio:
+minimizzazione GDPR e protezione by design — consenso sempre esplicito,
+mai preselezionato, separato per finalità, storicizzato, revocabile.
+
+- **Schema**: `Consent` è un record per ogni ciclo
+  concessione→(eventuale) revoca — stesso pattern di `Invitation`
+  (`accepted_at` nullable), non un campo mutabile su `Patient`. Revocare
+  aggiorna `revoked_at`, **non cancella mai la riga**: nessuna rotta di
+  delete esiste su questo model. Una nuova concessione dopo una revoca
+  crea una **nuova riga**, non riapre quella vecchia — lo storico "fu
+  dato, poi revocato il giorno X" resta leggibile per sempre.
+- **Finalità/modalità/versione informativa**: tre enum applicativi fissi
+  (`ConsentPurpose`, `ConsentCollectionMethod`, `PolicyVersion`), mai
+  testo libero né cataloghi modificabili da UI — coerente con "ruoli
+  fissi" dell'RBAC. Le finalità sono load-bearing (ogni finalità è
+  destinata a essere letta da un gate/modulo specifico altrove, es.
+  "marketing" governerà il futuro invio massivo del CRM): un catalogo
+  editabile da un tenant senza codice che lo interroghi sarebbe
+  fuorviante. Aggiungere una finalità/modalità/versione futura = un nuovo
+  case nell'enum, zero modifiche allo schema.
+- **Minore/tutore**: `given_by_patient_id` (chi ha materialmente
+  espresso il consenso, se diverso dal paziente) è derivato
+  **automaticamente** al momento della registrazione da
+  `Patient::isMinor()` (età < 18 su `date_of_birth`) **combinato con**
+  `guardian_patient_id` — non dalla sola presenza di `guardian_patient_id`,
+  perché quel campo su un adulto può significare "intestatario fattura"
+  (es. azienda), non "tutore che consente per me". Nessun campo/picker
+  per sceglierlo a mano nella UI in questa passata.
+- **Gate centrale**: `App\Core\Consents\Support\ConsentGate::allows(Patient $patient, ConsentPurpose $purpose, ?string $channel = null): bool`
+  — cerca il consenso più recente per paziente+finalità, verifica che sia
+  attivo, e se `$channel` è passato (es. `'mobile_phone'`) verifica anche
+  che quel campo contatto non sia vuoto su `Patient`. È il punto che ogni
+  futuro modulo (CRM, promemoria agenda) deve interrogare prima di usare
+  un contatto.
+- **Enforcement non aggirabile in UI**: `Patient` è ora `Notifiable`
+  (trait Laravel). Ogni `Notification` verso un `Patient` **deve**
+  implementare `App\Core\Consents\Contracts\RequiresConsent`
+  (`consentPurpose()`, `consentChannel()`) — il listener
+  `App\Core\Consents\Listeners\EnforceConsentGate`, agganciato
+  all'evento nativo `Illuminate\Notifications\Events\NotificationSending`
+  (registrato in `AppServiceProvider::boot()`), blocca **di default**
+  (fail-closed) qualunque notifica a un `Patient` che non la implementi —
+  dimenticarsene blocca l'invio, non lo lascia passare. Se la implementa,
+  interroga `ConsentGate::allows()` e blocca se `false`.
+- **Confine noto**: questo intercetta tutto ciò che passa dal sistema
+  Notification di Laravel. Un codice che chiamasse `Mail::send()`
+  direttamente lo scavalcherebbe — stesso tipo di confine già accettato
+  per l'isolamento tenant (difesa a più livelli, ma la garanzia finale è
+  la disciplina + il pattern documentato qui).
+- **Test del gating**: usare `Event::fake([NotificationSent::class, NotificationSkipped::class])`,
+  **mai** `Notification::fake()` — quest'ultimo sostituisce l'intero
+  channel manager e non spedisce mai l'evento `NotificationSending` che
+  il listener intercetta, quindi il test passerebbe per il motivo
+  sbagliato (niente parte perché tutto è finto, non perché il gate ha
+  bloccato). Vedi `tests/Feature/ConsentGatingTest.php`.
+- **Audit**: nessun trait `Auditable` generico su `Consent` (userebbe
+  l'azione generica `updated` per la revoca) — chiamate esplicite ad
+  `AuditRecorder::record()` con azioni nominate `consent_granted`/
+  `consent_revoked`, stesso pattern di `role_changed`/`role_assigned`.
+- **Permessi**: riusa `consents.manage` (già esistente nel catalogo RBAC,
+  già solo `admin`+`segreteria`) — nessun permesso nuovo creato.
+- **Rimandato deliberatamente** (registrato, non costruito): firma
+  digitale su tablet, portale paziente, integrazione FSE (bastano nuovi
+  case negli enum quando arriveranno), e gli altri diritti
+  dell'interessato GDPR (accesso, rettifica, cancellazione, portabilità).
 
 ## Convenzioni
 

@@ -1,6 +1,7 @@
+import ConsentsPanel from '@/Components/ConsentsPanel';
 import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
 function Field({ label, value }) {
     return (
@@ -27,8 +28,11 @@ function formatAddress(street, postalCode, city, province) {
     return parts.length ? parts.join(', ') : null;
 }
 
-export default function Show({ patient }) {
+export default function Show({ patient, consentOptions }) {
     const { delete: destroy, processing } = useForm();
+    const canManageConsents = usePage().props.auth.permissions.includes(
+        'consents.manage',
+    );
 
     const confirmDelete = (e) => {
         e.preventDefault();
@@ -139,6 +143,15 @@ export default function Show({ patient }) {
                             )}
                         </div>
                     </div>
+                </div>
+
+                <div className="mx-auto mt-6 max-w-3xl sm:px-6 lg:px-8">
+                    <ConsentsPanel
+                        patientId={patient.id}
+                        consents={patient.consents ?? []}
+                        options={consentOptions}
+                        canManage={canManageConsents}
+                    />
                 </div>
             </div>
         </AuthenticatedLayout>
