@@ -1,10 +1,11 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import PatientPicker from '@/Components/PatientPicker';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { Link, useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 const STATUSES = [
     { value: 'scheduled', label: 'Programmato' },
@@ -27,70 +28,6 @@ function toDateTimeLocal(value) {
     const d = new Date(value);
     const pad = (n) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function PatientPicker({ value, label, onSelect, error }) {
-    const [query, setQuery] = useState(label ?? '');
-    const [results, setResults] = useState([]);
-    const timeoutRef = useRef(null);
-
-    useEffect(() => {
-        setQuery(label ?? '');
-    }, [label]);
-
-    const search = (text) => {
-        setQuery(text);
-        onSelect(null, '');
-
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        if (text.trim().length < 2) {
-            setResults([]);
-            return;
-        }
-
-        timeoutRef.current = setTimeout(async () => {
-            const response = await fetch(
-                route('agenda.patients-search', { q: text }),
-            );
-            setResults(await response.json());
-        }, 250);
-    };
-
-    return (
-        <div className="relative">
-            <InputLabel htmlFor="patient_search" value="Paziente" />
-            <TextInput
-                id="patient_search"
-                className="mt-1 block w-full"
-                value={query}
-                placeholder="Cerca per nome o cognome…"
-                onChange={(e) => search(e.target.value)}
-                autoComplete="off"
-            />
-            <InputError message={error} className="mt-2" />
-            {results.length > 0 && (
-                <ul className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-                    {results.map((patient) => (
-                        <li key={patient.id}>
-                            <button
-                                type="button"
-                                className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                                onClick={() => {
-                                    onSelect(
-                                        patient.id,
-                                        `${patient.first_name} ${patient.last_name}`,
-                                    );
-                                    setResults([]);
-                                }}
-                            >
-                                {patient.first_name} {patient.last_name}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
 }
 
 export default function AppointmentModal({
@@ -152,8 +89,9 @@ export default function AppointmentModal({
 
                 <form onSubmit={submit} className="space-y-4">
                     <PatientPicker
+                        id="patient_search"
                         value={data.patient_id}
-                        label={patientLabel}
+                        initialLabel={patientLabel}
                         error={errors.patient_id}
                         onSelect={(id, label) => {
                             setData('patient_id', id);

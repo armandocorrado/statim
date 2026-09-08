@@ -3,6 +3,7 @@
 use App\Core\Agenda\Http\Controllers\AgendaController;
 use App\Core\Agenda\Http\Controllers\AppointmentController;
 use App\Core\Agenda\Http\Controllers\PatientSearchController;
+use App\Core\Billing\Http\Controllers\BillingDocumentController;
 use App\Core\Consents\Http\Controllers\ConsentController;
 use App\Core\Patients\Http\Controllers\PatientController;
 use App\Core\Users\Http\Controllers\InvitationAcceptController;
@@ -34,6 +35,15 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('agenda/patients-search', [PatientSearchController::class, 'index'])->name('agenda.patients-search');
     Route::post('agenda/appointments', [AppointmentController::class, 'store'])->name('agenda.appointments.store');
     Route::patch('agenda/appointments/{appointment}', [AppointmentController::class, 'update'])->name('agenda.appointments.update');
+
+    Route::get('billing', [BillingDocumentController::class, 'index'])->name('billing.index');
+    Route::get('billing/create', [BillingDocumentController::class, 'create'])->name('billing.create');
+    Route::post('billing', [BillingDocumentController::class, 'store'])->name('billing.store');
+    Route::get('billing/{document}', [BillingDocumentController::class, 'show'])->name('billing.show');
+    Route::get('billing/{document}/edit', [BillingDocumentController::class, 'edit'])->name('billing.edit');
+    Route::put('billing/{document}', [BillingDocumentController::class, 'update'])->name('billing.update');
+    Route::delete('billing/{document}', [BillingDocumentController::class, 'destroy'])->name('billing.destroy');
+    Route::patch('billing/{document}/issue', [BillingDocumentController::class, 'issue'])->name('billing.issue');
 
     Route::post('patients/{patient}/consents', [ConsentController::class, 'store'])->name('patients.consents.store');
     Route::patch('patients/{patient}/consents/{consent}/revoke', [ConsentController::class, 'revoke'])->name('patients.consents.revoke');

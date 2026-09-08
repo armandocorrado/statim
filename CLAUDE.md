@@ -363,6 +363,85 @@ convergere altri moduli futuri (una futura `Prestazione` potrà referenziare
   automatici (dipendono da CRM e consensi, già pronti), prenotazione
   online dal portale paziente, collegamento a piano di cura/prestazioni.
 
+## Fatturazione (`App\Core\Billing`)
+
+CORE trasversale. **Solo le fondamenta interne in questa fase**: nessuna
+integrazione reale con SdI (fattura elettronica) o Sistema TS (Tessera
+Sanitaria), nessuna conservazione a norma vera — tutte e tre isolate
+dietro interfacce con implementazioni mock, vedi sotto.
+
+- **`BillingDocument`**: `patient_id` sempre valorizzato (la prestazione,
+  serve al Sistema TS anche quando l'intestatario è diverso);
+  `recipient_patient_id` + campi `recipient_*` (nome, codice fiscale,
+  partita IVA, indirizzo) sono una **copia congelata** dei dati fiscali
+  del destinatario al momento della creazione — non un join live su
+  `Patient`: se il paziente corregge poi un indirizzo, i documenti già
+  creati non devono cambiare silenziosamente. Stesso principio già
+  applicato a `Consent.given_by_patient_id`.
+- **Stati: solo `Draft` → `Issued`**, deliberatamente niente "annullato".
+  Una volta emesso (numero assegnato), un documento fiscale non si
+  cancella né si modifica — correggerlo richiederà una nota di credito
+  (documento separato, futuro, fuori scope qui). Le bozze si modificano/
+  eliminano liberamente (nessun impegno fiscale ancora). `document_number`/
+  `document_year`/`fiscal_channel`/i tre campi `total_*` restano `null`
+  finché bozza, **congelati** all'emissione — un futuro bugfix al calcolo
+  totali non deve cambiare retroattivamente l'importo di una fattura già
+  emessa.
+- **Esenzione IVA senza aliquote inventate**: `vat_rate` (decimale,
+  nullable — null/0 = esente) + `vat_exemption_reason` (testo libero, **non**
+  un enum di codici norma — non sono certo che l'elenco applicabile sia
+  solo "art. 10 n. 18 DPR 633/72", il più comune per le prestazioni
+  sanitarie ma non necessariamente l'unico). Precompilato come
+  suggerimento nella UI, resta modificabile. **Da validare con un
+  commercialista** prima dell'uso reale.
+- **Numerazione**: annuale con reset (convenzione più comune in Italia),
+  tabella contatore dedicata `billing_document_counters`
+  (`App\Core\Billing\Support\BillingDocumentNumberer`), **non** un
+  `MAX(document_number)+1` con `lockForUpdate()` come si potrebbe pensare
+  di fare per analogia con l'anti-sovrapposizione dell'Agenda — quel
+  pattern lì lockerebbe un set di righe potenzialmente vuoto (nessun
+  documento ancora quell'anno), che non protegge dal primo inserimento
+  concorrente. La riga contatore esiste sempre una volta inizializzata,
+  quindi c'è sempre qualcosa da lockare; la race sulla sua stessa
+  creazione (primo documento dell'anno) è gestita a parte catturando
+  `UniqueConstraintViolationException` e ri-lockando la riga del
+  vincitore. Assegnato **solo** all'emissione, mai in bozza.
+- **Le tre porte esterne** (`App\Core\Billing\Contracts`):
+  `ElectronicInvoiceGateway` (SdI), `HealthExpenseReportingGateway`
+  (Sistema TS), `DigitalPreservationGateway` (conservazione a norma) — tre
+  interfacce, tre implementazioni `Mock*` (`App\Core\Billing\Gateways`)
+  bindate in `AppServiceProvider::register()`. **Cosa serve prima di
+  sostituirle con implementazioni reali**: certificati e credenziali SdI,
+  ambiente di test Sistema TS, un conservatore accreditato per la
+  conservazione. Cambiare solo quei binding quando arriverà quella fase —
+  nessun'altra riga del modulo dipende dai dettagli esterni.
+- **La regola SdI vs Sistema TS — esplicita, non implicita**
+  (`App\Core\Billing\Support\FiscalChannelResolver`): un documento le cui
+  spese sono riportate al Sistema TS non deve **mai** essere inviato
+  anche allo SdI verso il privato — divieto di legge a tutela della
+  riservatezza dei dati sanitari (soggetto a proroga annuale, verificare
+  la normativa vigente al momento dell'integrazione reale). Il campo
+  `fiscal_channel` è **un unico enum**, non due booleani indipendenti
+  (`sent_to_sdi`/`sent_to_ts`): la violazione "inviato a entrambi" è
+  strutturalmente irrappresentabile nello schema, non solo vietata da un
+  controllo runtime dimenticabile. Oggi il resolver ha una sola regola
+  (destinatario sempre persona fisica, perché non esiste ancora un
+  intestatario azienda — deliberatamente rimandato, come già per
+  l'anagrafica) → sempre Sistema TS. **Da validare con un commercialista**:
+  l'esatta condizione che fa scattare il divieto SdI (qui legata a
+  "destinatario persona fisica"; non è chiaro se l'eventuale opposizione
+  del paziente all'invio al Sistema TS cambi comunque il divieto SdI o
+  meno).
+- **Permessi**: riusa `billing.view`/`billing.manage` (già solo
+  admin+segreteria) — nessun permesso nuovo. `payments.manage` resta
+  **riservato e non usato**: il tracciamento incassi è un'entità distinta,
+  non nello scope di questa passata (lo suggerisce già il fatto che sia
+  un permesso separato da `billing.manage`).
+- **Rimandato deliberatamente**: nota di credito (per correggere un
+  documento emesso), tracciamento incassi/pagamenti (`payments.manage`
+  riservato per quello), intestatario azienda (non-`Patient`), le
+  integrazioni reali stesse (vedi sopra).
+
 ## Convenzioni
 
 - **Chiavi primarie**: ULID (`HasUlids`) su `tenants`, `users`, `patients`,

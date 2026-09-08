@@ -11,6 +11,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const canViewAgenda =
         permissions?.includes('agenda.view.own') ||
         permissions?.includes('agenda.view.all');
+    const canViewBilling = permissions?.includes('billing.view');
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -46,6 +47,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         active={route().current('agenda.*')}
                                     >
                                         Agenda
+                                    </NavLink>
+                                )}
+                                {canViewBilling && (
+                                    <NavLink
+                                        href={route('billing.index')}
+                                        active={route().current('billing.*')}
+                                    >
+                                        Fatturazione
                                     </NavLink>
                                 )}
                                 {canViewUsers && (
@@ -172,6 +181,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 active={route().current('agenda.*')}
                             >
                                 Agenda
+                            </ResponsiveNavLink>
+                        )}
+                        {canViewBilling && (
+                            <ResponsiveNavLink
+                                href={route('billing.index')}
+                                active={route().current('billing.*')}
+                            >
+                                Fatturazione
                             </ResponsiveNavLink>
                         )}
                         {canViewUsers && (

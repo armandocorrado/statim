@@ -4,6 +4,14 @@ namespace App\Providers;
 
 use App\Core\Agenda\Models\Appointment;
 use App\Core\Agenda\Policies\AppointmentPolicy;
+use App\Core\Billing\Contracts\DigitalPreservationGateway;
+use App\Core\Billing\Contracts\ElectronicInvoiceGateway;
+use App\Core\Billing\Contracts\HealthExpenseReportingGateway;
+use App\Core\Billing\Gateways\MockDigitalPreservationGateway;
+use App\Core\Billing\Gateways\MockElectronicInvoiceGateway;
+use App\Core\Billing\Gateways\MockHealthExpenseReportingGateway;
+use App\Core\Billing\Models\BillingDocument;
+use App\Core\Billing\Policies\BillingDocumentPolicy;
 use App\Core\Consents\Listeners\EnforceConsentGate;
 use App\Core\Consents\Models\Consent;
 use App\Core\Consents\Policies\ConsentPolicy;
@@ -24,7 +32,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Implementazioni mock — vedi CLAUDE.md per cosa serve prima di
+        // sostituirle con implementazioni reali (certificati, ambienti di
+        // test SdI/Sistema TS). Cambiare SOLO questi binding quando quel
+        // giorno arriverà: nessun'altra riga del modulo Billing dipende
+        // da questi dettagli.
+        $this->app->bind(ElectronicInvoiceGateway::class, MockElectronicInvoiceGateway::class);
+        $this->app->bind(HealthExpenseReportingGateway::class, MockHealthExpenseReportingGateway::class);
+        $this->app->bind(DigitalPreservationGateway::class, MockDigitalPreservationGateway::class);
     }
 
     /**
@@ -38,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Consent::class, ConsentPolicy::class);
         Gate::policy(Appointment::class, AppointmentPolicy::class);
+        Gate::policy(BillingDocument::class, BillingDocumentPolicy::class);
 
         Event::listen(NotificationSending::class, EnforceConsentGate::class);
     }
