@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Core\Agenda\Support\AppointmentTypeProvisioner;
 use App\Core\Patients\Models\Patient;
 use App\Core\Tenancy\Models\Tenant;
 use App\Core\Users\Support\TenantRoleProvisioner;
@@ -37,6 +38,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         TenantRoleProvisioner::provisionDefaults($tenant);
+        AppointmentTypeProvisioner::provisionDefaults($tenant);
 
         $registrar = app(PermissionRegistrar::class);
         $registrar->setPermissionsTeamId($tenant->id);

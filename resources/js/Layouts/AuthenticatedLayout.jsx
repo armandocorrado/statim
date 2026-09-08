@@ -8,6 +8,9 @@ import { useState } from 'react';
 export default function AuthenticatedLayout({ header, children }) {
     const { user, permissions } = usePage().props.auth;
     const canViewUsers = permissions?.includes('users.view');
+    const canViewAgenda =
+        permissions?.includes('agenda.view.own') ||
+        permissions?.includes('agenda.view.all');
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -37,6 +40,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Pazienti
                                 </NavLink>
+                                {canViewAgenda && (
+                                    <NavLink
+                                        href={route('agenda.index')}
+                                        active={route().current('agenda.*')}
+                                    >
+                                        Agenda
+                                    </NavLink>
+                                )}
                                 {canViewUsers && (
                                     <NavLink
                                         href={route('users.index')}
@@ -155,6 +166,14 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Pazienti
                         </ResponsiveNavLink>
+                        {canViewAgenda && (
+                            <ResponsiveNavLink
+                                href={route('agenda.index')}
+                                active={route().current('agenda.*')}
+                            >
+                                Agenda
+                            </ResponsiveNavLink>
+                        )}
                         {canViewUsers && (
                             <ResponsiveNavLink
                                 href={route('users.index')}

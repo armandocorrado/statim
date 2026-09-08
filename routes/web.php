@@ -1,5 +1,8 @@
 <?php
 
+use App\Core\Agenda\Http\Controllers\AgendaController;
+use App\Core\Agenda\Http\Controllers\AppointmentController;
+use App\Core\Agenda\Http\Controllers\PatientSearchController;
 use App\Core\Consents\Http\Controllers\ConsentController;
 use App\Core\Patients\Http\Controllers\PatientController;
 use App\Core\Users\Http\Controllers\InvitationAcceptController;
@@ -26,6 +29,11 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::resource('patients', PatientController::class);
+
+    Route::get('agenda', [AgendaController::class, 'index'])->name('agenda.index');
+    Route::get('agenda/patients-search', [PatientSearchController::class, 'index'])->name('agenda.patients-search');
+    Route::post('agenda/appointments', [AppointmentController::class, 'store'])->name('agenda.appointments.store');
+    Route::patch('agenda/appointments/{appointment}', [AppointmentController::class, 'update'])->name('agenda.appointments.update');
 
     Route::post('patients/{patient}/consents', [ConsentController::class, 'store'])->name('patients.consents.store');
     Route::patch('patients/{patient}/consents/{consent}/revoke', [ConsentController::class, 'revoke'])->name('patients.consents.revoke');

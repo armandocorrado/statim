@@ -269,6 +269,76 @@ mai preselezionato, separato per finalità, storicizzato, revocabile.
   case negli enum quando arriveranno), e gli altri diritti
   dell'interessato GDPR (accesso, rettifica, cancellazione, portabilità).
 
+## Agenda (`App\Core\Agenda`)
+
+CORE trasversale: punto d'accesso al paziente, non un semplice calendario
+— `Appointment` collega paziente + operatore + tempo, pensato per farci
+convergere altri moduli futuri (una futura `Prestazione` potrà referenziare
+`appointment_id`, nullable, senza toccare questo schema).
+
+- **Risorsa**: `operator_id` (`User`) è l'unica risorsa contro cui si
+  previene la sovrapposizione — nessun concetto di "poltrona" distinto
+  nello schema (deliberatamente rimandato, nessun requisito concreto
+  ancora). `patient_id` è **nullable**: un appuntamento senza paziente è
+  un blocco/indisponibilità dell'operatore (pausa, ferie), non serve un
+  flag separato.
+- **`status`**: enum applicativo fisso (`AppointmentStatus`) — guida
+  logica reale (query "solo confermati", esclusione dal controllo
+  sovrapposizioni), stessa ragione per cui ruoli RBAC e finalità dei
+  consensi sono fissi. `Cancelled`/`NoShow` sono esclusi dal controllo
+  sovrapposizioni: uno slot annullato o non presentato libera l'orario.
+  **Nessuna rotta di delete**: annullare è un cambio di stato, mai una
+  cancellazione fisica — stesso principio di `Patient`/`Consent`.
+- **`appointment_type`**: al contrario di `status`, è un **catalogo
+  per-tenant** (`AppointmentType`, tabella, non enum) — a differenza delle
+  finalità dei consensi non guida alcuna logica applicativa (pura
+  categorizzazione/colore), e ogni studio (futuro verticale incluso)
+  vorrà le proprie categorie. Provisionato con 5 default sensati alla
+  creazione del tenant (`AppointmentTypeProvisioner`, stesso pattern di
+  `TenantRoleProvisioner`) — **nessuna UI di gestione/modifica ancora in
+  questa passata**, solo lo schema pronto.
+- **Squadra clinica — deliberatamente NON costruita in questa passata**:
+  l'agenda è il suo aggancio naturale, ma la squadra serve solo a
+  filtrare la *visibilità* — è un filtro additivo su query/policy quando
+  verrà costruita, non richiede alcuna modifica allo schema `Appointment`
+  qui presente. Fino ad allora `aso`/`igienista` con `agenda.view.all`
+  vedono l'intero studio (stato interinale già dichiarato, nessuna
+  regressione).
+- **Anti-sovrapposizione**: MySQL non ha vincoli nativi di
+  range-exclusion (a differenza di Postgres). Difesa a due livelli: (1)
+  validazione nella FormRequest; (2) ri-controllo dentro
+  `DB::transaction()` con `lockForUpdate()` nel controller, per chiudere
+  la finestra di corsa critica tra due richieste concorrenti. **Limite
+  onesto**: è un lock best-effort su un range scan indicizzato
+  (`tenant_id`, `operator_id`, `start_at`), non una garanzia assoluta
+  come un vincolo nativo — nessun test automatico dimostra davvero la
+  concorrenza reale (un singolo processo PHPUnit sincrono non può
+  simularla), solo il rifiuto logico della sovrapposizione.
+- **Caveat MySQL sui timestamp NOT NULL**: `start_at`/`end_at` usano
+  `dateTime()`, non `timestamp()`. Con `NO_ZERO_DATE` attivo, MySQL
+  assegna implicitamente `DEFAULT CURRENT_TIMESTAMP` alla prima colonna
+  `TIMESTAMP NOT NULL` senza default di una tabella, ma **rifiuta** ogni
+  colonna successiva con lo stesso problema ("Invalid default value") —
+  `appointments` ne ha due. Trovato eseguendo la migration sul MySQL
+  reale, non dai test Pest (SQLite non ha questa restrizione): se altre
+  tabelle future avranno più di una colonna `NOT NULL` di tipo
+  data/ora senza default, usare `dateTime()`.
+- **Viste**: giorno = colonne affiancate per operatore (la vista
+  d'insieme multi-operatore); settimana = focalizzata su un operatore
+  alla volta (una griglia settimanale multi-operatore sarebbe
+  illeggibile). Creazione/modifica via modale sopra il calendario, non
+  pagine separate come `Patients/Create` — pattern standard per
+  interfacce di questo tipo.
+- **Permessi**: riusa `agenda.view.own`/`agenda.manage.own`/
+  `agenda.view.all`/`agenda.manage.all` (già nel catalogo RBAC) — nessun
+  permesso nuovo. Chi ha solo `.own` può assegnare l'appuntamento solo a
+  se stesso, sia in creazione (`AppointmentPolicy::create($user, $operatorId)`)
+  sia in modifica (validazione dedicata in `UpdateAppointmentRequest`
+  contro la riassegnazione).
+- **Rimandato deliberatamente** (registrato, non costruito): promemoria
+  automatici (dipendono da CRM e consensi, già pronti), prenotazione
+  online dal portale paziente, collegamento a piano di cura/prestazioni.
+
 ## Convenzioni
 
 - **Chiavi primarie**: ULID (`HasUlids`) su `tenants`, `users`, `patients`,

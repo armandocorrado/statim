@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Core\Agenda\Models\Appointment;
+use App\Core\Agenda\Policies\AppointmentPolicy;
 use App\Core\Consents\Listeners\EnforceConsentGate;
 use App\Core\Consents\Models\Consent;
 use App\Core\Consents\Policies\ConsentPolicy;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Patient::class, PatientPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Consent::class, ConsentPolicy::class);
+        Gate::policy(Appointment::class, AppointmentPolicy::class);
 
         Event::listen(NotificationSending::class, EnforceConsentGate::class);
     }
