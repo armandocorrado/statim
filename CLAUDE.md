@@ -396,3 +396,11 @@ Utenti demo dopo il seeder (password `medcare!wild` per tutti):
 `aso@rossi.test`, `segreteria@rossi.test` (tenant Studio Rossi) e gli
 equivalenti `@bianchi.test` (tenant Studio Bianchi) — utili per verificare
 manualmente l'isolamento tra tenant e i permessi per ruolo.
+
+`Database\Seeders\DemoTeamSeeder` (richiamato da `DatabaseSeeder`, anche
+rilanciabile da solo — `php artisan db:seed --class="Database\Seeders\DemoTeamSeeder"`
+— idempotente, verifica per email prima di creare) aggiunge, per ciascuno
+dei due tenant demo, altri 4 `odontoiatra` + 4 `igienista`
+(`nome.cognome@{dominio}`, stessa password) — servono per esercitare
+davvero le viste multi-operatore dell'Agenda, non solo un operatore per
+ruolo. Nomi in `DemoTeamSeeder::teamMembers()`.

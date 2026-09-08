@@ -26,6 +26,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->createTenant('Studio Dentistico Rossi', 'studio-rossi', 'rossi.test');
         $this->createTenant('Studio Dentistico Bianchi', 'studio-bianchi', 'bianchi.test');
+
+        $this->call(DemoTeamSeeder::class);
     }
 
     private function createTenant(string $name, string $slug, string $emailDomain): void
