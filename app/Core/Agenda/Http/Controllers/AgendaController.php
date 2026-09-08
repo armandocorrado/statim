@@ -32,7 +32,14 @@ class AgendaController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->filter(fn (User $candidate) => $candidate->can('agenda.view.own') || $candidate->can('agenda.manage.all'))
+            ->filter(fn (User $candidate) => $candidate->can('agenda.view.own')
+                || $candidate->can('agenda.manage.all')
+                || $candidate->can('agenda.view.all'))
+            ->map(fn (User $candidate) => [
+                'id' => $candidate->id,
+                'name' => $candidate->name,
+                'role' => $candidate->getRoleNames()->first(),
+            ])
             ->values();
 
         $appointments = Appointment::query()

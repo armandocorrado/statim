@@ -21,6 +21,21 @@ const STATUS_STYLES = {
     no_show: 'bg-amber-100 text-amber-700',
 };
 
+// Titolo/colore per profilo — le card operatore si distinguono a colpo
+// d'occhio in una vista multi-operatore. Ruoli fissi (RBAC), stesso
+// principio delle altre mappe etichetta di questa pagina.
+const ROLE_PROFILES = {
+    odontoiatra: { label: 'Odontoiatra', border: 'border-t-blue-600', badge: 'bg-blue-100 text-blue-700' },
+    igienista: { label: 'Igienista', border: 'border-t-teal-600', badge: 'bg-teal-100 text-teal-700' },
+    aso: { label: 'Assistente alla poltrona', border: 'border-t-amber-600', badge: 'bg-amber-100 text-amber-700' },
+    admin: { label: 'Titolare', border: 'border-t-slate-600', badge: 'bg-slate-100 text-slate-700' },
+    segreteria: { label: 'Segreteria', border: 'border-t-purple-600', badge: 'bg-purple-100 text-purple-700' },
+};
+
+function roleProfile(role) {
+    return ROLE_PROFILES[role] ?? { label: role, border: 'border-t-gray-400', badge: 'bg-gray-100 text-gray-700' };
+}
+
 function formatTime(value) {
     return new Date(value).toLocaleTimeString('it-IT', {
         hour: '2-digit',
@@ -102,6 +117,7 @@ export default function Index({
     }, [operators, appointments, operatorId]);
 
     const weekOperatorId = operatorId || operators[0]?.id;
+    const weekOperator = operators.find((o) => o.id === weekOperatorId);
     const weekDays = useMemo(() => {
         if (view !== 'week') return [];
         const start = new Date(date);
@@ -175,7 +191,7 @@ export default function Index({
                                 <option value="">Tutti gli operatori</option>
                                 {operators.map((op) => (
                                     <option key={op.id} value={op.id}>
-                                        {op.name}
+                                        {op.name} — {roleProfile(op.role).label}
                                     </option>
                                 ))}
                             </select>
@@ -205,14 +221,22 @@ export default function Index({
 
                     {view === 'day' && (
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {dayColumns.map(({ operator, appointments: ops }) => (
+                            {dayColumns.map(({ operator, appointments: ops }) => {
+                                const profile = roleProfile(operator.role);
+
+                                return (
                                 <div
                                     key={operator.id}
-                                    className="rounded-lg bg-gray-50 p-3"
+                                    className={`rounded-lg border-t-4 bg-gray-50 p-3 ${profile.border}`}
                                 >
-                                    <h3 className="mb-2 text-sm font-semibold text-slate-800">
+                                    <h3 className="text-sm font-semibold text-slate-800">
                                         {operator.name}
                                     </h3>
+                                    <span
+                                        className={`mb-2 mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs ${profile.badge}`}
+                                    >
+                                        {profile.label}
+                                    </span>
                                     {ops.length === 0 && (
                                         <p className="text-xs text-gray-400">
                                             Nessun appuntamento
@@ -226,36 +250,51 @@ export default function Index({
                                         />
                                     ))}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 
                     {view === 'week' && (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-7">
-                            {weekDays.map((day) => (
-                                <div
-                                    key={day.iso}
-                                    className="rounded-lg bg-gray-50 p-3"
-                                >
-                                    <h3 className="mb-2 text-sm font-semibold text-slate-800">
-                                        {day.date.toLocaleDateString('it-IT', {
-                                            weekday: 'short',
-                                            day: 'numeric',
-                                        })}
-                                    </h3>
-                                    {day.appointments.length === 0 && (
-                                        <p className="text-xs text-gray-400">—</p>
-                                    )}
-                                    {day.appointments.map((appointment) => (
-                                        <AppointmentCard
-                                            key={appointment.id}
-                                            appointment={appointment}
-                                            onEdit={(a) => setModalState({ appointment: a })}
-                                        />
-                                    ))}
+                        <>
+                            {weekOperator && (
+                                <div className="mb-3 flex items-center gap-2">
+                                    <span className="text-sm font-medium text-slate-800">
+                                        {weekOperator.name}
+                                    </span>
+                                    <span
+                                        className={`inline-block rounded-full px-2 py-0.5 text-xs ${roleProfile(weekOperator.role).badge}`}
+                                    >
+                                        {roleProfile(weekOperator.role).label}
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
+                            )}
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-7">
+                                {weekDays.map((day) => (
+                                    <div
+                                        key={day.iso}
+                                        className={`rounded-lg border-t-4 bg-gray-50 p-3 ${roleProfile(weekOperator?.role).border}`}
+                                    >
+                                        <h3 className="mb-2 text-sm font-semibold text-slate-800">
+                                            {day.date.toLocaleDateString('it-IT', {
+                                                weekday: 'short',
+                                                day: 'numeric',
+                                            })}
+                                        </h3>
+                                        {day.appointments.length === 0 && (
+                                            <p className="text-xs text-gray-400">—</p>
+                                        )}
+                                        {day.appointments.map((appointment) => (
+                                            <AppointmentCard
+                                                key={appointment.id}
+                                                appointment={appointment}
+                                                onEdit={(a) => setModalState({ appointment: a })}
+                                            />
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
 
                 </div>

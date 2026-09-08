@@ -14,6 +14,14 @@ const STATUSES = [
     { value: 'no_show', label: 'Non presentato' },
 ];
 
+const ROLE_LABELS = {
+    odontoiatra: 'Odontoiatra',
+    igienista: 'Igienista',
+    aso: 'Assistente alla poltrona',
+    admin: 'Titolare',
+    segreteria: 'Segreteria',
+};
+
 function toDateTimeLocal(value) {
     if (!value) return '';
     const d = new Date(value);
@@ -166,7 +174,7 @@ export default function AppointmentModal({
                             {canManageAll &&
                                 operators.map((op) => (
                                     <option key={op.id} value={op.id}>
-                                        {op.name}
+                                        {op.name} — {ROLE_LABELS[op.role] ?? op.role}
                                     </option>
                                 ))}
                         </select>
