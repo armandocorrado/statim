@@ -400,7 +400,18 @@ manualmente l'isolamento tra tenant e i permessi per ruolo.
 `Database\Seeders\DemoTeamSeeder` (richiamato da `DatabaseSeeder`, anche
 rilanciabile da solo — `php artisan db:seed --class="Database\Seeders\DemoTeamSeeder"`
 — idempotente, verifica per email prima di creare) aggiunge, per ciascuno
-dei due tenant demo, altri 4 `odontoiatra` + 4 `igienista`
+dei due tenant demo, altri 4 `odontoiatra` + 4 `igienista` + 4 `aso`
 (`nome.cognome@{dominio}`, stessa password) — servono per esercitare
 davvero le viste multi-operatore dell'Agenda, non solo un operatore per
-ruolo. Nomi in `DemoTeamSeeder::teamMembers()`.
+ruolo. I 4 ASO sono elencati nello stesso ordine dei 4 odontoiatri (un
+assistente "corrispondente" per ciascuno) solo per convenzione nell'elenco
+— nessun legame a livello di dati tra operatore e assistente. Nomi in
+`DemoTeamSeeder::teamMembers()`.
+
+`Database\Seeders\DemoAppointmentSeeder` (richiamato subito dopo, stesso
+pattern di idempotenza — salta un operatore che ha già almeno un
+appuntamento) dà a ciascun odontoiatra demo 5 appuntamenti (oggi + i due
+giorni successivi, orari fissi in `DemoAppointmentSeeder::SLOTS`) così le
+viste dell'Agenda non sono vuote appena si accede in demo. Solo
+odontoiatri ("i dottori") — igienisti e ASO restano senza appuntamenti
+propri in questa passata.

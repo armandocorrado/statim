@@ -5,7 +5,7 @@ use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoTeamSeeder;
 use Spatie\Permission\PermissionRegistrar;
 
-test('the demo team seeder adds 4 odontoiatri and 4 igienisti per demo tenant', function () {
+test('the demo team seeder adds 4 odontoiatri, 4 igienisti and 4 aso per demo tenant', function () {
     (new DatabaseSeeder)->run();
 
     foreach (['rossi.test', 'bianchi.test'] as $emailDomain) {
@@ -18,10 +18,14 @@ test('the demo team seeder adds 4 odontoiatri and 4 igienisti per demo tenant', 
         $igienisti = User::where('tenant_id', $tenant->id)
             ->whereHas('roles', fn ($q) => $q->where('name', 'igienista'))
             ->get();
+        $aso = User::where('tenant_id', $tenant->id)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'aso'))
+            ->get();
 
         // 1 each already comes from DatabaseSeeder's own base roster.
         expect($odontoiatri)->toHaveCount(5)
-            ->and($igienisti)->toHaveCount(5);
+            ->and($igienisti)->toHaveCount(5)
+            ->and($aso)->toHaveCount(5);
 
         foreach (['giulia.ferrari', 'marco.esposito', 'chiara.ricci', 'luca.gallo'] as $localPart) {
             $user = User::where('email', "{$localPart}@{$emailDomain}")->firstOrFail();
@@ -31,6 +35,11 @@ test('the demo team seeder adds 4 odontoiatri and 4 igienisti per demo tenant', 
         foreach (['sara.conti', 'davide.moretti', 'elena.fontana', 'matteo.barbieri'] as $localPart) {
             $user = User::where('email', "{$localPart}@{$emailDomain}")->firstOrFail();
             expect($user->getRoleNames()->all())->toBe(['igienista']);
+        }
+
+        foreach (['francesca.bruno', 'alessandro.greco', 'martina.villa', 'simone.ferri'] as $localPart) {
+            $user = User::where('email', "{$localPart}@{$emailDomain}")->firstOrFail();
+            expect($user->getRoleNames()->all())->toBe(['aso']);
         }
     }
 });
