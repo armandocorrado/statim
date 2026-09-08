@@ -14,14 +14,12 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * Popola l'agenda degli odontoiatri demo con qualche appuntamento — senza
  * dati, le viste multi-operatore dell'Agenda sono vuote e non dicono
- * niente in demo. Solo odontoiatri ("i dottori"): igienisti/aso restano
- * senza appuntamenti propri in questa passata.
- *
- * Idempotente: se un operatore ha già almeno un appuntamento, lo salta —
- * rilanciare il seeder non raddoppia gli appuntamenti. Rispetta comunque
- * il vincolo anti-sovrapposizione già esistente (orari distinti per
- * operatore), quindi non serve un controllo separato qui. Opera solo sui
- * tenant demo noti per slug, come DemoTeamSeeder.
+ * niente in demo. Solo odontoiatri ("i dottori"): igienisti restano senza
+ * appuntamenti propri in questa passata. Ogni appuntamento viene anche
+ * legato all'ASO "corrispondente" (assistant_id) — stesso abbinamento
+ * elencato in DemoTeamSeeder — così l'agenda dell'assistente mostra
+ * davvero gli appuntamenti del proprio odontoiatra, non solo per
+ * convenzione nell'elenco utenti.
  */
 class DemoAppointmentSeeder extends Seeder
 {
@@ -38,6 +36,23 @@ class DemoAppointmentSeeder extends Seeder
         ['day_offset' => 1, 'hour' => 10, 'minute' => 0],
         ['day_offset' => 2, 'hour' => 9, 'minute' => 30],
     ];
+
+    /**
+     * Odontoiatra -> ASO "corrispondente" (local-part email, stesso
+     * dominio per entrambi). Stesso abbinamento di DemoTeamSeeder.
+     *
+     * @return array<string, string>
+     */
+    private function asoPairings(): array
+    {
+        return [
+            'odontoiatra' => 'aso',
+            'giulia.ferrari' => 'francesca.bruno',
+            'marco.esposito' => 'alessandro.greco',
+            'chiara.ricci' => 'martina.villa',
+            'luca.gallo' => 'simone.ferri',
+        ];
+    }
 
     public function run(): void
     {
@@ -64,9 +79,19 @@ class DemoAppointmentSeeder extends Seeder
             return;
         }
 
+        $pairings = $this->asoPairings();
+
         foreach ($odontoiatri as $operator) {
             if (Appointment::where('operator_id', $operator->id)->exists()) {
                 continue;
+            }
+
+            $emailDomain = explode('@', $operator->email)[1] ?? null;
+            $odontoiatraLocalPart = explode('@', $operator->email)[0] ?? null;
+            $assistant = null;
+
+            if ($emailDomain && isset($pairings[$odontoiatraLocalPart])) {
+                $assistant = User::where('email', "{$pairings[$odontoiatraLocalPart]}@{$emailDomain}")->first();
             }
 
             foreach (self::SLOTS as $index => $slot) {
@@ -80,6 +105,7 @@ class DemoAppointmentSeeder extends Seeder
                 $appointment = new Appointment([
                     'patient_id' => $patients[$index % $patients->count()]->id,
                     'operator_id' => $operator->id,
+                    'assistant_id' => $assistant?->id,
                     'appointment_type_id' => $types->isNotEmpty() ? $types[$index % $types->count()]->id : null,
                     'start_at' => $start,
                     'end_at' => (clone $start)->addMinutes(30),

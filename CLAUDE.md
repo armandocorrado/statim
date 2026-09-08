@@ -282,6 +282,16 @@ convergere altri moduli futuri (una futura `Prestazione` potrà referenziare
   ancora). `patient_id` è **nullable**: un appuntamento senza paziente è
   un blocco/indisponibilità dell'operatore (pausa, ferie), non serve un
   flag separato.
+- **`assistant_id`** (`User`, nullable): chi assiste alla poltrona (in
+  genere un ASO), distinto da `operator_id` che tratta il paziente —
+  legame reale a livello di dati, non solo una convenzione nell'elenco
+  demo. **Non** partecipa al controllo anti-sovrapposizione (solo
+  `operator_id` lo fa): un assistente doppio-prenotato su due odontoiatri
+  in contemporanea non viene bloccato in questa passata. Nelle viste
+  Agenda, l'appuntamento compare sia nella colonna dell'operatore sia in
+  quella dell'assistente (filtro lato frontend su `operator_id` OR
+  `assistant_id`; lato backend il filtro `operator_id` in query string
+  della vista fa match su entrambi).
 - **`status`**: enum applicativo fisso (`AppointmentStatus`) — guida
   logica reale (query "solo confermati", esclusione dal controllo
   sovrapposizioni), stessa ragione per cui ruoli RBAC e finalità dei
@@ -404,14 +414,17 @@ dei due tenant demo, altri 4 `odontoiatra` + 4 `igienista` + 4 `aso`
 (`nome.cognome@{dominio}`, stessa password) — servono per esercitare
 davvero le viste multi-operatore dell'Agenda, non solo un operatore per
 ruolo. I 4 ASO sono elencati nello stesso ordine dei 4 odontoiatri (un
-assistente "corrispondente" per ciascuno) solo per convenzione nell'elenco
-— nessun legame a livello di dati tra operatore e assistente. Nomi in
-`DemoTeamSeeder::teamMembers()`.
+assistente "corrispondente" per ciascuno) — l'abbinamento è anche un
+legame reale a livello di dati, vedi `DemoAppointmentSeeder` sotto. Nomi
+in `DemoTeamSeeder::teamMembers()`.
 
 `Database\Seeders\DemoAppointmentSeeder` (richiamato subito dopo, stesso
 pattern di idempotenza — salta un operatore che ha già almeno un
 appuntamento) dà a ciascun odontoiatra demo 5 appuntamenti (oggi + i due
 giorni successivi, orari fissi in `DemoAppointmentSeeder::SLOTS`) così le
 viste dell'Agenda non sono vuote appena si accede in demo. Solo
-odontoiatri ("i dottori") — igienisti e ASO restano senza appuntamenti
-propri in questa passata.
+odontoiatri ("i dottori") — igienisti restano senza appuntamenti propri
+in questa passata. Ogni appuntamento viene anche legato (`assistant_id`)
+all'ASO "corrispondente" secondo lo stesso abbinamento di
+`DemoTeamSeeder` (`DemoAppointmentSeeder::asoPairings()`), così l'agenda
+dell'assistente mostra davvero gli appuntamenti del proprio odontoiatra.

@@ -43,10 +43,13 @@ class AgendaController extends Controller
             ->values();
 
         $appointments = Appointment::query()
-            ->with(['patient:id,first_name,last_name', 'operator:id,name', 'type:id,name,color'])
+            ->with(['patient:id,first_name,last_name', 'operator:id,name', 'assistant:id,name', 'type:id,name,color'])
             ->where('start_at', '<', $rangeEnd)
             ->where('end_at', '>', $rangeStart)
-            ->when($operatorId, fn ($query) => $query->where('operator_id', $operatorId))
+            ->when(
+                $operatorId,
+                fn ($query) => $query->where(fn ($q) => $q->where('operator_id', $operatorId)->orWhere('assistant_id', $operatorId)),
+            )
             ->when(
                 ! $user->can('agenda.view.all'),
                 fn ($query) => $query->where('operator_id', $user->id),

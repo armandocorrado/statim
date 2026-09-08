@@ -43,7 +43,14 @@ function formatTime(value) {
     });
 }
 
-function AppointmentCard({ appointment, onEdit }) {
+function AppointmentCard({ appointment, columnOperatorId, onEdit }) {
+    const counterpart =
+        appointment.assistant && columnOperatorId === appointment.operator.id
+            ? { role: 'Assistente', name: appointment.assistant.name }
+            : columnOperatorId === appointment.assistant?.id
+              ? { role: 'Odontoiatra', name: appointment.operator.name }
+              : null;
+
     return (
         <button
             type="button"
@@ -70,6 +77,11 @@ function AppointmentCard({ appointment, onEdit }) {
             {appointment.type && (
                 <div className="mt-0.5 text-xs text-gray-500">
                     {appointment.type.name}
+                </div>
+            )}
+            {counterpart && (
+                <div className="mt-0.5 text-xs text-gray-500">
+                    {counterpart.role}: {counterpart.name}
                 </div>
             )}
         </button>
@@ -112,7 +124,9 @@ export default function Index({
 
         return targetOperators.map((op) => ({
             operator: op,
-            appointments: appointments.filter((a) => a.operator.id === op.id),
+            appointments: appointments.filter(
+                (a) => a.operator.id === op.id || a.assistant?.id === op.id,
+            ),
         }));
     }, [operators, appointments, operatorId]);
 
@@ -134,7 +148,7 @@ export default function Index({
                 iso,
                 appointments: appointments.filter(
                     (a) =>
-                        a.operator.id === weekOperatorId &&
+                        (a.operator.id === weekOperatorId || a.assistant?.id === weekOperatorId) &&
                         a.start_at.slice(0, 10) === iso,
                 ),
             };
@@ -246,6 +260,7 @@ export default function Index({
                                         <AppointmentCard
                                             key={appointment.id}
                                             appointment={appointment}
+                                            columnOperatorId={operator.id}
                                             onEdit={(a) => setModalState({ appointment: a })}
                                         />
                                     ))}
@@ -288,6 +303,7 @@ export default function Index({
                                             <AppointmentCard
                                                 key={appointment.id}
                                                 appointment={appointment}
+                                                columnOperatorId={weekOperatorId}
                                                 onEdit={(a) => setModalState({ appointment: a })}
                                             />
                                         ))}

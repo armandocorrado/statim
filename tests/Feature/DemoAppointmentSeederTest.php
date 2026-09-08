@@ -17,8 +17,25 @@ test('the demo appointment seeder gives every odontoiatra 5 appointments per dem
         $odontoiatri = User::where('tenant_id', $tenant->id)->role('odontoiatra')->get();
         expect($odontoiatri)->toHaveCount(5);
 
+        $pairings = [
+            'odontoiatra' => 'aso',
+            'giulia.ferrari' => 'francesca.bruno',
+            'marco.esposito' => 'alessandro.greco',
+            'chiara.ricci' => 'martina.villa',
+            'luca.gallo' => 'simone.ferri',
+        ];
+
         foreach ($odontoiatri as $operator) {
-            expect(Appointment::where('operator_id', $operator->id)->count())->toBe(5);
+            $appointments = Appointment::where('operator_id', $operator->id)->get();
+            expect($appointments)->toHaveCount(5);
+
+            $localPart = explode('@', $operator->email)[0];
+            $expectedAsoEmail = "{$pairings[$localPart]}@{$emailDomain}";
+            $expectedAso = User::where('email', $expectedAsoEmail)->firstOrFail();
+
+            foreach ($appointments as $appointment) {
+                expect($appointment->assistant_id)->toBe($expectedAso->id);
+            }
         }
 
         // Igienisti e aso restano senza appuntamenti propri in questa passata.

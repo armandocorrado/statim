@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * cambio di stato (Cancelled), mai una cancellazione fisica.
  */
 #[Fillable([
-    'patient_id', 'operator_id', 'appointment_type_id',
+    'patient_id', 'operator_id', 'assistant_id', 'appointment_type_id',
     'start_at', 'end_at', 'status', 'notes',
 ])]
 class Appointment extends Model
@@ -54,6 +54,15 @@ class Appointment extends Model
     public function operator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'operator_id');
+    }
+
+    /**
+     * Chi assiste alla poltrona (in genere un ASO), se assegnato —
+     * distinto dall'operatore che tratta il paziente.
+     */
+    public function assistant(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assistant_id');
     }
 
     public function type(): BelongsTo

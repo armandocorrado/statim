@@ -103,9 +103,12 @@ export default function AppointmentModal({
 }) {
     const isEditing = Boolean(appointment);
 
+    const asoOptions = operators.filter((op) => op.role === 'aso');
+
     const { data, setData, post, patch, processing, errors } = useForm({
         patient_id: appointment?.patient?.id ?? null,
         operator_id: appointment?.operator?.id ?? (canManageAll ? '' : currentUserId),
+        assistant_id: appointment?.assistant?.id ?? '',
         appointment_type_id: appointment?.type?.id ?? '',
         start_at: toDateTimeLocal(appointment?.start_at),
         end_at: toDateTimeLocal(appointment?.end_at),
@@ -179,6 +182,24 @@ export default function AppointmentModal({
                                 ))}
                         </select>
                         <InputError message={errors.operator_id} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="assistant_id" value="Assistente alla poltrona" />
+                        <select
+                            id="assistant_id"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            value={data.assistant_id}
+                            onChange={(e) => setData('assistant_id', e.target.value)}
+                        >
+                            <option value="">—</option>
+                            {asoOptions.map((op) => (
+                                <option key={op.id} value={op.id}>
+                                    {op.name}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError message={errors.assistant_id} className="mt-2" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

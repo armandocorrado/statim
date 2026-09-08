@@ -27,6 +27,10 @@ class StoreAppointmentRequest extends FormRequest
                 'required', 'ulid',
                 Rule::exists('users', 'id')->where('tenant_id', $tenantId),
             ],
+            'assistant_id' => [
+                'nullable', 'ulid',
+                Rule::exists('users', 'id')->where('tenant_id', $tenantId),
+            ],
             'appointment_type_id' => [
                 'nullable', 'ulid',
                 Rule::exists('appointment_types', 'id')->where('tenant_id', $tenantId),

@@ -34,6 +34,10 @@ class UpdateAppointmentRequest extends FormRequest
                     }
                 },
             ],
+            'assistant_id' => [
+                'nullable', 'ulid',
+                Rule::exists('users', 'id')->where('tenant_id', $tenantId),
+            ],
             'appointment_type_id' => [
                 'nullable', 'ulid',
                 Rule::exists('appointment_types', 'id')->where('tenant_id', $tenantId),

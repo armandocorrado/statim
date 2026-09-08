@@ -25,6 +25,7 @@ class AppointmentFactory extends Factory
             'tenant_id' => Tenant::factory(),
             'patient_id' => Patient::factory(),
             'operator_id' => User::factory(),
+            'assistant_id' => null,
             'appointment_type_id' => null,
             'start_at' => $start,
             'end_at' => $end,
