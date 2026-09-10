@@ -1,31 +1,39 @@
 # Modulo Dental (verticale odontoiatrico)
 
-Cartella riservata per il verticale clinico odontoiatrico (cartella clinica,
-odontogramma, piani di cura). Ancora vuota di modelli/controller nella fase
-di walking skeleton: nessuna astrazione viene costruita finché non esiste un
-secondo verticale o requisiti concreti per questo.
+Verticale clinico odontoiatrico. Contiene:
 
-Il primo contenuto reale è `Providers/DentalServiceProvider.php`: innesta i
-ruoli clinici (`odontoiatra`, `igienista`) e i permessi su cartella/
-odontogramma nel catalogo RBAC del core tramite
-`TenantRoleProvisioner::extend()`, senza che il core importi nulla da qui —
-vedi `App\Core\Users\Support\TenantRoleProvisioner`.
+- `Providers/DentalServiceProvider.php` — innesta i ruoli clinici
+  (`odontoiatra`, `igienista`) e i permessi su cartella/odontogramma nel
+  catalogo RBAC del core tramite `TenantRoleProvisioner::extend()`, senza
+  che il core importi nulla da qui — vedi
+  `App\Core\Users\Support\TenantRoleProvisioner`. Registra anche le Policy
+  di questo modulo (mai nel core `AppServiceProvider`).
+- **Cartella clinica** (`Models/DentalAnamnesis`, `DentalAlert`,
+  `DentalDiaryEntry`, `DentalDocument`) — anamnesi, alert di sicurezza
+  (allergie/rischi), diario clinico append-only, documenti su storage
+  privato. Dettagli completi in `CLAUDE.md`, sezione "Cartella clinica".
+
+**Ancora da fare**: odontogramma interattivo (componente visuale a sé),
+integrazione scanner/sistemi radiologici, FSE, collegamento a piani di
+cura/preventivi.
 
 ## Regola di confine
 
 `App\Core\*` non deve mai importare nulla da `App\Modules\Dental\*`. Il
-contrario è permesso: il modulo Dental potrà dipendere da `App\Core`
+contrario è permesso: il modulo Dental può dipendere da `App\Core`
 (model `Tenant`, `Patient`, trait `BelongsToTenant`/`Auditable`, ecc.) allo
 stesso modo di qualsiasi altro consumatore del core.
 
-Quando questo modulo verrà avviato, seguirà la stessa struttura del core:
+Struttura:
 
 ```
 app/Modules/Dental/
+├── Enums/
 ├── Models/
+├── Policies/
+├── Support/
 ├── Http/Controllers/
-├── Http/Requests/
-└── Policies/
+└── Http/Requests/
 ```
 
 con le pagine Inertia corrispondenti in `resources/js/Pages/Dental/`.

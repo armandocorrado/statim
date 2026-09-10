@@ -30,9 +30,11 @@ function formatAddress(street, postalCode, city, province) {
 
 export default function Show({ patient, consentOptions }) {
     const { delete: destroy, processing } = useForm();
-    const canManageConsents = usePage().props.auth.permissions.includes(
-        'consents.manage',
-    );
+    const permissions = usePage().props.auth.permissions;
+    const canManageConsents = permissions.includes('consents.manage');
+    const canViewClinicalRecord =
+        permissions.includes('clinical_records.view') ||
+        permissions.includes('clinical_records.hygiene.view');
 
     const confirmDelete = (e) => {
         e.preventDefault();
@@ -127,6 +129,14 @@ export default function Show({ patient, consentOptions }) {
                             >
                                 Modifica
                             </Link>
+                            {canViewClinicalRecord && (
+                                <Link
+                                    href={route('dental.show', patient.id)}
+                                    className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+                                >
+                                    Cartella clinica
+                                </Link>
+                            )}
                             <Link href={route('patients.index')}>
                                 <SecondaryButton type="button">
                                     Torna alla lista

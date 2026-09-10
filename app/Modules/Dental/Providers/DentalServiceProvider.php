@@ -2,13 +2,28 @@
 
 namespace App\Modules\Dental\Providers;
 
+use App\Core\Patients\Models\Patient;
 use App\Core\Users\Support\TenantRoleProvisioner;
+use App\Modules\Dental\Models\DentalAlert;
+use App\Modules\Dental\Models\DentalAnamnesis;
+use App\Modules\Dental\Models\DentalDiaryEntry;
+use App\Modules\Dental\Models\DentalDocument;
+use App\Modules\Dental\Policies\DentalAlertPolicy;
+use App\Modules\Dental\Policies\DentalAnamnesisPolicy;
+use App\Modules\Dental\Policies\DentalDiaryEntryPolicy;
+use App\Modules\Dental\Policies\DentalDocumentPolicy;
+use App\Modules\Dental\Support\ClinicalAccessChecker;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 /**
  * Grafts the dental vertical's clinical roles and permissions onto the core
  * role catalog, without App\Core\Users\Support\TenantRoleProvisioner ever
  * importing anything from this module — see TenantRoleProvisioner::extend().
+ *
+ * Also registers this module's own policies — Gate::policy() calls for
+ * Dental models live HERE, never in the core AppServiceProvider, for the
+ * same boundary reason.
  */
 class DentalServiceProvider extends ServiceProvider
 {
@@ -38,5 +53,17 @@ class DentalServiceProvider extends ServiceProvider
                 'clinical_records.hygiene.view', 'clinical_records.hygiene.update',
             ],
         ]);
+
+        Gate::policy(DentalAnamnesis::class, DentalAnamnesisPolicy::class);
+        Gate::policy(DentalAlert::class, DentalAlertPolicy::class);
+        Gate::policy(DentalDiaryEntry::class, DentalDiaryEntryPolicy::class);
+        Gate::policy(DentalDocument::class, DentalDocumentPolicy::class);
+
+        // Apertura della scheda clinica nel suo insieme — non è legata al
+        // ciclo di vita di un singolo model (l'anamnesi potrebbe non
+        // esistere ancora), quindi un Gate dedicato invece di un metodo su
+        // una Policy specifica.
+        Gate::define('view-clinical-record', fn ($user, Patient $patient) => $patient->tenant_id === $user->tenant_id
+            && ClinicalAccessChecker::canView($user));
     }
 }

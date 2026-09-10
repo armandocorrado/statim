@@ -15,10 +15,11 @@ Gestionale cloud multi-tenant per professioni sanitarie. Fase attuale:
 - `app/Core/*` — tutto ciò che è comune a qualunque professione sanitaria:
   tenancy, utenti/ruoli, anagrafica paziente, audit log. **Non deve mai**
   importare nulla da `app/Modules/*`.
-- `app/Modules/Dental/*` — verticale odontoiatrico (cartella clinica,
-  odontogramma). **Vuoto per design** in questa fase: nessuna astrazione
-  costruita finché non esiste un requisito concreto. Può dipendere da
-  `App\Core` liberamente.
+- `app/Modules/Dental/*` — verticale odontoiatrico. Contiene la cartella
+  clinica (anamnesi, alert, diario, documenti — vedi sezione dedicata più
+  sotto) e l'innesto dei ruoli clinici sull'RBAC (`DentalServiceProvider`).
+  **L'odontogramma resta da fare**: nessuna astrazione costruita finché
+  non esiste un requisito concreto. Può dipendere da `App\Core` liberamente.
 - `App\Models\User` resta nel namespace standard Laravel (`app/Models`)
   anziché sotto `App\Core\Users`, perché è strettamente accoppiato al
   sistema di auth del framework (Breeze/Sanctum/Fortify si aspettano
@@ -441,6 +442,71 @@ dietro interfacce con implementazioni mock, vedi sotto.
   documento emesso), tracciamento incassi/pagamenti (`payments.manage`
   riservato per quello), intestatario azienda (non-`Patient`), le
   integrazioni reali stesse (vedi sopra).
+
+## Cartella clinica (`App\Modules\Dental`) — primo contenuto reale del verticale
+
+**Non è core**: vive in `App\Modules\Dental`, il core non la importa mai.
+Si aggancia a `Patient` (core) via `patient_id`, senza che `Patient` sappia
+nulla di lei. 4 entità: `DentalAnamnesis`, `DentalAlert`,
+`DentalDiaryEntry`, `DentalDocument` — **non** ancora l'odontogramma
+(componente visuale a sé, prossimo passo).
+
+- **Anamnesi e alert NON sono sezionati per igiene — scelta deliberata,
+  confermata esplicitamente**: sono dati di sicurezza (allergie, fattori
+  di rischio) che riguardano chiunque tratti il paziente, non solo chi fa
+  igiene — un'allergia al lattice deve essere nota anche all'igienista.
+  Visibili/modificabili da chiunque abbia **un qualunque** permesso
+  clinico (`clinical_records.view`/`.update` **oppure**
+  `clinical_records.hygiene.view`/`.update`) — vedi
+  `App\Modules\Dental\Support\ClinicalAccessChecker::canView()`/`canManage()`.
+  Un alert risolto si disattiva (`is_active = false`), non si cancella.
+- **Diario e documenti SONO sezionati** (`DentalRecordSection`:
+  `General`/`Hygiene`) — è qui che si applica davvero il permesso parziale
+  dell'igienista: vede/scrive solo le voci `Hygiene`, odontoiatra/admin
+  vedono e taggano entrambe le sezioni
+  (`ClinicalAccessChecker::canViewSection()`/`canManageSection()`).
+- **Diario e documenti sono append-only**: nessuna rotta di update/delete
+  su nessuno dei due model. Una nota di seduta non si corregge, si annota
+  con una nuova voce — stesso principio di
+  `AuditLog`/`Consent`/`BillingDocument` emesso, qui applicato perché una
+  cartella clinica cartacea funziona così nella pratica sanitaria reale:
+  non si cancella un'annotazione passata.
+- **RBAC bloccato dal sistema**: segreteria e ASO non hanno **nessuno**
+  dei permessi `clinical_records.*` nel catalogo RBAC attuale — le Policy
+  ritornano `false` per costruzione, senza bisogno di un controllo ad hoc
+  "blocca segreteria/ASO". Nessun permesso nuovo creato in questa passata.
+- **Audit anche in lettura — capacità nuova**: finora `Auditable` tracciava
+  solo le scritture. Qui, in aggiunta (scritture su `DentalAnamnesis`/
+  `DentalAlert`/`DentalDiaryEntry`/`DentalDocument` via trait `Auditable`
+  come al solito), l'apertura della cartella clinica registra **una sola**
+  voce esplicita `AuditRecorder::record($patient, 'clinical_record_viewed', [], [])`
+  per l'intera pagina — legata al `Patient` (non a un sotto-model, che
+  potrebbe non esistere ancora), non una voce per ogni sotto-risorsa
+  renderizzata (altrimenti è rumore, non tracciabilità utile).
+- **Cifratura**: cast `encrypted` su tutti i campi testuali clinici
+  (`DentalAnamnesis.*`, `DentalAlert.description`,
+  `DentalDiaryEntry.content`, `DentalDocument.description`) — stesso
+  meccanismo già in uso per gli indirizzi di `Patient`.
+- **Documenti — solo storage privato per ora, confermato esplicitamente**:
+  i file vivono sul disco `local` (`storage/app/private`, mai raggiungibile
+  via URL pubblico — a differenza del disco `public`, non ha symlink in
+  `public/`). Download solo tramite rotta autenticata+autorizzata dalla
+  Policy (stessa logica sezione/ruolo di sopra), mai un URL diretto. **Non**
+  cifrati byte-per-byte sul disco (rimandato — complessità reale per file
+  grandi come radiografie, sproporzionata per questa passata). Nessuna
+  rotta di update/delete, stesso principio del diario.
+- **Policy delle Policy**: `ClinicalAccessChecker` (in
+  `App\Modules\Dental\Support`) centralizza la regola "pieno OR igiene"
+  usata da tutte e 4 le Policy — un solo punto invece di ripeterla quattro
+  volte leggermente diverse.
+- **Gate dedicato per l'apertura della pagina**: `view-clinical-record`
+  (registrato in `DentalServiceProvider::boot()`, non in un metodo su
+  `PatientPolicy` — quest'ultima è nel core e non deve mai importare
+  `ClinicalAccessChecker` dal verticale).
+- **Rimandato deliberatamente** (registrato, non costruito): odontogramma
+  interattivo (prossimo passo — componente visuale a sé), integrazione
+  scanner/sistemi radiologici, FSE, collegamento a piani di cura/
+  preventivi, cifratura dei file a livello di byte.
 
 ## Convenzioni
 

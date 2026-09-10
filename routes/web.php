@@ -9,6 +9,11 @@ use App\Core\Patients\Http\Controllers\PatientController;
 use App\Core\Users\Http\Controllers\InvitationAcceptController;
 use App\Core\Users\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
+use App\Modules\Dental\Http\Controllers\DentalAlertController;
+use App\Modules\Dental\Http\Controllers\DentalAnamnesisController;
+use App\Modules\Dental\Http\Controllers\DentalClinicalRecordController;
+use App\Modules\Dental\Http\Controllers\DentalDiaryEntryController;
+use App\Modules\Dental\Http\Controllers\DentalDocumentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -44,6 +49,14 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::put('billing/{document}', [BillingDocumentController::class, 'update'])->name('billing.update');
     Route::delete('billing/{document}', [BillingDocumentController::class, 'destroy'])->name('billing.destroy');
     Route::patch('billing/{document}/issue', [BillingDocumentController::class, 'issue'])->name('billing.issue');
+
+    Route::get('patients/{patient}/dental', [DentalClinicalRecordController::class, 'show'])->name('dental.show');
+    Route::put('patients/{patient}/dental/anamnesis', [DentalAnamnesisController::class, 'update'])->name('dental.anamnesis.update');
+    Route::post('patients/{patient}/dental/alerts', [DentalAlertController::class, 'store'])->name('dental.alerts.store');
+    Route::patch('patients/{patient}/dental/alerts/{alert}/resolve', [DentalAlertController::class, 'resolve'])->name('dental.alerts.resolve');
+    Route::post('patients/{patient}/dental/diary', [DentalDiaryEntryController::class, 'store'])->name('dental.diary.store');
+    Route::post('patients/{patient}/dental/documents', [DentalDocumentController::class, 'store'])->name('dental.documents.store');
+    Route::get('patients/{patient}/dental/documents/{document}/download', [DentalDocumentController::class, 'download'])->name('dental.documents.download');
 
     Route::post('patients/{patient}/consents', [ConsentController::class, 'store'])->name('patients.consents.store');
     Route::patch('patients/{patient}/consents/{consent}/revoke', [ConsentController::class, 'revoke'])->name('patients.consents.revoke');

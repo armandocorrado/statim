@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Modules\Dental\Http\Controllers;
+
+use App\Core\Patients\Models\Patient;
+use App\Http\Controllers\Controller;
+use App\Modules\Dental\Http\Requests\StoreDentalDocumentRequest;
+use App\Modules\Dental\Models\DentalDocument;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class DentalDocumentController extends Controller
+{
+    /**
+     * Il file va sul disco `local` (privato di default in Laravel, mai
+     * raggiungibile via URL — vedi config/filesystems.php), non sul disco
+     * `public`. Path con tenant_id/patient_id per organizzazione, ma la
+     * vera protezione è l'autorizzazione sulla rotta di download, non
+     * l'imprevedibilità del path.
+     */
+    public function store(StoreDentalDocumentRequest $request, Patient $patient): RedirectResponse
+    {
+        $data = $request->validated();
+        $file = $request->file('file');
+
+        $path = $file->storeAs(
+            "dental-documents/{$patient->tenant_id}/{$patient->id}",
+            Str::ulid().'.'.$file->getClientOriginalExtension(),
+            'local',
+        );
+
+        $document = new DentalDocument([
+            'section' => $data['section'],
+            'document_type' => $data['document_type'],
+            'description' => $data['description'] ?? null,
+        ]);
+        $document->patient_id = $patient->id;
+        $document->tenant_id = $patient->tenant_id;
+        $document->file_path = $path;
+        $document->original_filename = $file->getClientOriginalName();
+        $document->mime_type = $file->getClientMimeType();
+        $document->file_size = $file->getSize();
+        $document->uploaded_by = $request->user()->id;
+        $document->save();
+
+        return back()->with('success', 'Documento caricato.');
+    }
+
+    public function download(Patient $patient, DentalDocument $document): StreamedResponse
+    {
+        $this->authorize('view', $document);
+
+        abort_if($document->patient_id !== $patient->id, 404);
+
+        return $document->streamDownload();
+    }
+}
