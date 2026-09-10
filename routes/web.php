@@ -58,6 +58,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::post('patients/{patient}/dental/diary', [DentalDiaryEntryController::class, 'store'])->name('dental.diary.store');
     Route::post('patients/{patient}/dental/documents', [DentalDocumentController::class, 'store'])->name('dental.documents.store');
     Route::get('patients/{patient}/dental/documents/{document}/download', [DentalDocumentController::class, 'download'])->name('dental.documents.download');
+    Route::get('patients/{patient}/dental/documents/{document}/preview', [DentalDocumentController::class, 'preview'])->name('dental.documents.preview');
     Route::get('patients/{patient}/dental/odontogram', [DentalOdontogramController::class, 'show'])->name('dental.odontogram.show');
     Route::post('patients/{patient}/dental/odontogram', [DentalOdontogramController::class, 'store'])->name('dental.odontogram.store');
 

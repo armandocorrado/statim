@@ -629,6 +629,39 @@ riguardano — senza toccare cifratura/storage dei documenti già in essere.
   documenti elencati nella cartella clinica generale non generano un
   evento per ciascuno.
 
+### Visualizzazione inline dei documenti (`dental.documents.preview`)
+
+Accanto al link "Scarica" (`dental.documents.download`, sempre presente),
+un secondo link "Visualizza" apre PDF/immagini direttamente nel browser
+(es. una radiografia durante la visita) invece di forzarne il download.
+
+- **Stessa rotta protetta, nessuna Policy nuova**: `DentalDocumentController::preview()`
+  applica **esattamente** la stessa autorizzazione di `download()`
+  (`$this->authorize('view', $document)` + verifica `patient_id`) — è lo
+  stesso file, sullo stesso disco privato, dietro la stessa Policy;
+  cambia solo l'header di risposta.
+- **Unica differenza: `Content-Disposition`**. `DentalDocument::streamInline()`
+  usa `Storage::response()` (imposta `inline`) invece di
+  `Storage::download()` (imposta `attachment`, usato da `streamDownload()`)
+  — nessun meccanismo di protezione diverso tra i due.
+- **Whitelist esplicita dei mime visualizzabili** (`DentalDocument::PREVIEWABLE_MIME_TYPES`
+  — `application/pdf`, `image/jpeg`, `image/png`): coincide oggi con i
+  mime già accettati in upload da `StoreDentalDocumentRequest`, quindi
+  ogni documento caricabile è già previewable. La whitelist resta
+  comunque una blindatura lato server, non solo lato UI: se un mime non
+  è visualizzabile, `preview()` **ricade sul download** con un redirect,
+  anche se la rotta viene chiamata direttamente scavalcando la UI (che
+  già nasconde il link "Visualizza" per quei casi).
+- **Nessun audit dedicato — coerente con lo stato attuale**: il download
+  di un documento non genera oggi nessuna voce di audit; la preview resta
+  coerente con questo, non ne introduce una. Se in futuro si vorrà
+  tracciare l'accesso in lettura ai documenti, è un intervento a parte
+  che tocca entrambe le rotte insieme, non solo quella nuova.
+- **Effetto collaterale incluso**: `DentalDocument` ora nasconde
+  `file_path` (`protected $hidden = ['file_path']`) dai props Inertia —
+  non è mai stata la vera protezione (lo è la Policy sulla rotta), ma
+  non c'era motivo di esporre il percorso interno di storage lato client.
+
 ## Convenzioni
 
 - **Chiavi primarie**: ULID (`HasUlids`) su `tenants`, `users`, `patients`,

@@ -173,3 +173,104 @@ test('document-tooth links are truly append-only, no updated_at column', functio
 
     expect(\Illuminate\Support\Facades\Schema::hasColumn('dental_document_teeth', 'updated_at'))->toBeFalse();
 });
+
+test('a previewable document (pdf) is served inline, not as an attachment', function () {
+    Storage::fake('local');
+
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $document = DentalDocument::factory()->create([
+        'tenant_id' => $tenant->id,
+        'patient_id' => $patient->id,
+        'mime_type' => 'application/pdf',
+    ]);
+    Storage::disk('local')->put($document->file_path, 'fake pdf content');
+
+    $response = $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/documents/{$document->id}/preview");
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Disposition'))->toContain('inline');
+});
+
+test('an image document is also previewable inline', function () {
+    Storage::fake('local');
+
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $document = DentalDocument::factory()->create([
+        'tenant_id' => $tenant->id,
+        'patient_id' => $patient->id,
+        'mime_type' => 'image/jpeg',
+        'file_path' => 'dental-documents/fake/fake.jpg',
+    ]);
+    Storage::disk('local')->put($document->file_path, 'fake image content');
+
+    $response = $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/documents/{$document->id}/preview");
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Disposition'))->toContain('inline');
+});
+
+test('a non-previewable document falls back to a regular download', function () {
+    Storage::fake('local');
+
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $document = DentalDocument::factory()->create([
+        'tenant_id' => $tenant->id,
+        'patient_id' => $patient->id,
+        'mime_type' => 'application/msword',
+        'file_path' => 'dental-documents/fake/fake.doc',
+    ]);
+    Storage::disk('local')->put($document->file_path, 'fake doc content');
+
+    $response = $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/documents/{$document->id}/preview");
+
+    $response->assertRedirect(route('dental.documents.download', [$patient, $document]));
+});
+
+test('previewing a document requires the same clinical access and section match as download', function () {
+    Storage::fake('local');
+
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $segreteria = userForTenant($tenant, 'segreteria');
+    $igienista = userForTenant($tenant, 'igienista');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+
+    $generalDocument = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    Storage::disk('local')->put($generalDocument->file_path, 'fake pdf content');
+
+    $this->actingAs($segreteria)->get("/patients/{$patient->id}/dental/documents/{$generalDocument->id}/preview")
+        ->assertForbidden();
+
+    $this->actingAs($igienista)->get("/patients/{$patient->id}/dental/documents/{$generalDocument->id}/preview")
+        ->assertForbidden();
+
+    $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/documents/{$generalDocument->id}/preview")
+        ->assertOk();
+});
+
+test('a document cannot be previewed across patients', function () {
+    Storage::fake('local');
+
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $otherPatient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $otherPatient->id]);
+    Storage::disk('local')->put($document->file_path, 'fake pdf content');
+
+    $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/documents/{$document->id}/preview")
+        ->assertStatus(404);
+});
+
+test('the document file_path is never exposed to the frontend', function () {
+    $tenant = Tenant::factory()->create();
+    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id]);
+
+    expect($document->toArray())->not->toHaveKey('file_path');
+});

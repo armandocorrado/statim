@@ -63,4 +63,24 @@ class DentalDocumentController extends Controller
 
         return $document->streamDownload();
     }
+
+    /**
+     * Stessa autorizzazione/stesso storage del download — l'unica
+     * differenza è Content-Disposition: inline invece di attachment,
+     * solo per i mime che il browser sa mostrare. Per un tipo non
+     * visualizzabile ricade sul download, anche se qualcuno chiama questa
+     * rotta direttamente scavalcando la UI.
+     */
+    public function preview(Patient $patient, DentalDocument $document): StreamedResponse|RedirectResponse
+    {
+        $this->authorize('view', $document);
+
+        abort_if($document->patient_id !== $patient->id, 404);
+
+        if (! $document->isPreviewable()) {
+            return redirect()->route('dental.documents.download', [$patient, $document]);
+        }
+
+        return $document->streamInline();
+    }
 }

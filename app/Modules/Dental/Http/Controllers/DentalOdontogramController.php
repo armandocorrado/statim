@@ -40,7 +40,7 @@ class DentalOdontogramController extends Controller
 
         $documentsByTooth = DentalDocumentTooth::query()
             ->whereHas('document', fn ($query) => $query->where('patient_id', $patient->id))
-            ->with('document:id,section,document_type,description,original_filename,created_at')
+            ->with('document:id,section,document_type,description,original_filename,mime_type,created_at')
             ->when(
                 ! $hasFullAccess,
                 fn ($query) => $query->whereHas(

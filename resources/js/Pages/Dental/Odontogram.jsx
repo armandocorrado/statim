@@ -10,6 +10,11 @@ function formatDate(value) {
     return new Date(value).toLocaleDateString('it-IT');
 }
 
+// Coincide con DentalDocument::PREVIEWABLE_MIME_TYPES lato server — qui
+// serve solo a decidere se mostrare il link "Visualizza", la vera
+// blindatura resta la rotta /preview stessa.
+const PREVIEWABLE_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+
 // Layout visivo standard di un cartellino odontoiatrico: arcata superiore
 // e inferiore, quadrante del paziente a destra dello schermo a sinistra —
 // non l'ordine numerico grezzo (11-18, 21-28, ...) ma quello con cui un
@@ -223,12 +228,24 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                                 <span className="font-medium text-slate-800">{document.original_filename}</span>{' '}
                                 <span className="text-xs text-gray-500">({document.document_type})</span>
                             </span>
-                            <a
-                                href={route('dental.documents.download', [patientId, document.id])}
-                                className="text-indigo-600 hover:underline"
-                            >
-                                Scarica
-                            </a>
+                            <span className="flex items-center gap-3">
+                                {PREVIEWABLE_MIME_TYPES.includes(document.mime_type) && (
+                                    <a
+                                        href={route('dental.documents.preview', [patientId, document.id])}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        Visualizza
+                                    </a>
+                                )}
+                                <a
+                                    href={route('dental.documents.download', [patientId, document.id])}
+                                    className="text-indigo-600 hover:underline"
+                                >
+                                    Scarica
+                                </a>
+                            </span>
                         </li>
                     ))}
                 </ul>

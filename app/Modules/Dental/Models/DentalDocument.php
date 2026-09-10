@@ -31,6 +31,22 @@ class DentalDocument extends Model
 {
     use Auditable, BelongsToTenant, HasFactory, HasUlids;
 
+    /**
+     * Coincide con i mime accettati in upload da StoreDentalDocumentRequest
+     * (mimes:pdf,jpg,jpeg,png) — oggi ogni documento caricabile è quindi
+     * sempre visualizzabile inline. La whitelist esplicita resta comunque
+     * come blindatura lato server: se in futuro si accettassero altri tipi
+     * in upload (es. .docx), ricadono sul download senza bisogno di
+     * ricordarsi di aggiornare anche qui.
+     */
+    private const PREVIEWABLE_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+
+    /**
+     * Percorso interno di storage — mai la vera protezione (lo è la Policy
+     * sulla rotta), ma non ha motivo di essere esposto ai props Inertia.
+     */
+    protected $hidden = ['file_path'];
+
     protected static function newFactory(): Factory
     {
         return DentalDocumentFactory::new();
@@ -76,5 +92,20 @@ class DentalDocument extends Model
     public function streamDownload(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         return Storage::disk('local')->download($this->file_path, $this->original_filename);
+    }
+
+    public function isPreviewable(): bool
+    {
+        return in_array($this->mime_type, self::PREVIEWABLE_MIME_TYPES, true);
+    }
+
+    /**
+     * Stesso file, stesso disco privato, stessa protezione — l'unica
+     * differenza da streamDownload() è che Storage::response() imposta
+     * Content-Disposition: inline invece di attachment.
+     */
+    public function streamInline(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return Storage::disk('local')->response($this->file_path, $this->original_filename);
     }
 }

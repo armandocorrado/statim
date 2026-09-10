@@ -6,6 +6,10 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 
 const ALERT_CATEGORY_LABELS = { allergy: 'Allergia', risk: 'Fattore di rischio' };
 const SECTION_LABELS = { general: 'Generale', hygiene: 'Igiene' };
+// Coincide con DentalDocument::PREVIEWABLE_MIME_TYPES lato server — qui
+// serve solo a decidere se mostrare il link "Visualizza", la vera
+// blindatura resta la rotta /preview stessa.
+const PREVIEWABLE_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 function AlertsBanner({ alerts, patientId, canManage }) {
     if (alerts.length === 0) return null;
@@ -400,15 +404,30 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                                 </span>
                             )}
                         </div>
-                        <a
-                            href={route('dental.documents.download', [
-                                patientId,
-                                document.id,
-                            ])}
-                            className="text-indigo-600 hover:underline"
-                        >
-                            Scarica
-                        </a>
+                        <span className="flex items-center gap-3">
+                            {PREVIEWABLE_MIME_TYPES.includes(document.mime_type) && (
+                                <a
+                                    href={route('dental.documents.preview', [
+                                        patientId,
+                                        document.id,
+                                    ])}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-indigo-600 hover:underline"
+                                >
+                                    Visualizza
+                                </a>
+                            )}
+                            <a
+                                href={route('dental.documents.download', [
+                                    patientId,
+                                    document.id,
+                                ])}
+                                className="text-indigo-600 hover:underline"
+                            >
+                                Scarica
+                            </a>
+                        </span>
                     </li>
                 ))}
             </ul>
