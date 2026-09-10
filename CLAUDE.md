@@ -448,8 +448,8 @@ dietro interfacce con implementazioni mock, vedi sotto.
 **Non è core**: vive in `App\Modules\Dental`, il core non la importa mai.
 Si aggancia a `Patient` (core) via `patient_id`, senza che `Patient` sappia
 nulla di lei. 4 entità: `DentalAnamnesis`, `DentalAlert`,
-`DentalDiaryEntry`, `DentalDocument` — **non** ancora l'odontogramma
-(componente visuale a sé, prossimo passo).
+`DentalDiaryEntry`, `DentalDocument`, più `DentalToothCondition` per
+l'odontogramma (sezione dedicata più sotto).
 
 - **Anamnesi e alert NON sono sezionati per igiene — scelta deliberata,
   confermata esplicitamente**: sono dati di sicurezza (allergie, fattori
@@ -503,10 +503,79 @@ nulla di lei. 4 entità: `DentalAnamnesis`, `DentalAlert`,
   (registrato in `DentalServiceProvider::boot()`, non in un metodo su
   `PatientPolicy` — quest'ultima è nel core e non deve mai importare
   `ClinicalAccessChecker` dal verticale).
-- **Rimandato deliberatamente** (registrato, non costruito): odontogramma
-  interattivo (prossimo passo — componente visuale a sé), integrazione
-  scanner/sistemi radiologici, FSE, collegamento a piani di cura/
-  preventivi, cifratura dei file a livello di byte.
+- **Rimandato deliberatamente** (registrato, non costruito): integrazione
+  scanner/sistemi radiologici, FSE, collegamento a piani di cura/preventivi
+  (l'odontogramma è progettato per agganciarsi in futuro, vedi sotto),
+  cifratura dei file a livello di byte.
+
+## Odontogramma interattivo (`App\Modules\Dental`)
+
+Un'unica entità append-only, `DentalToothCondition` — non una tabella per
+dente né uno "stato corrente" salvato. Deliberatamente **non collegato**
+ora a preventivi/piani di cura (rimandato, confermato esplicitamente), ma
+`tooth_number` (stringa FDI) e l'id del record sono chiavi stabili già
+pronte per un futuro aggancio.
+
+- **Numerazione FDI/ISO 3950 a due cifre** (quadrante + posizione), non
+  l'"Universal" 1-32 americano — standard italiano/europeo. Copre fin da
+  subito sia la dentatura **permanente** (quadranti 1-4 × posizioni 1-8:
+  `11`-`48`) sia quella **decidua** (quadranti 5-8 × posizioni 1-5:
+  `51`-`85`), perché uno studio tratta bambini e capita la dentizione
+  mista (6-12 anni, permanenti e decidui coesistono nello stesso
+  paziente). Nessuna tabella: è uno standard fisso, validato da
+  `App\Modules\Dental\Support\FdiToothNumbers` (usata sia lato server per
+  la validazione sia per generare l'elenco denti passato alla UI).
+- **Stati clinici** (`App\Modules\Dental\Enums\ToothCondition`): set
+  iniziale estendibile (`Carious`, `Filled`, `Missing`, `ToExtract`,
+  `Implant`, `Crown`, `RootCanalTreated`, `Fractured`, `Bridge`,
+  `Sealant`) — nuovo case quando serve, mai un catalogo editabile da UI.
+  "Sano" **non è un case**: l'assenza di qualunque record per un dente è
+  lo stato di default, per non dover scrivere una riga per ogni dente
+  sano di ogni paziente.
+- **Storicizzazione append-only, coerente col diario clinico**: un
+  cambio di stato non aggiorna la riga precedente, ne aggiunge una nuova
+  — nessuna rotta di update/delete su `DentalToothCondition`. Lo stato
+  **corrente** di un dente è derivato, non salvato: il record più recente
+  per quel `(paziente, tooth_number)` vince, **qualunque sia il suo
+  `condition_type`** (un solo simbolo per dente — scelta esplicita,
+  confermata: non stati concorrenti indipendenti per condition_type,
+  come un vero cartellino cartaceo). Calcolato da
+  `App\Modules\Dental\Support\ToothConditionResolver::currentStates()`,
+  mai inline nel controller. Ordinato per `recorded_date` (la data
+  clinica dell'evento, può essere retrodatata) e a parità di data per
+  `id` — gli ULID sono cronologicamente ordinabili, `created_at` ha solo
+  granularità al secondo, stesso accorgimento già adottato per la
+  numerazione dei documenti di fatturazione. Lo storico completo resta
+  sempre consultabile, indipendentemente da quale record sia "corrente".
+- **Collegamento al diario clinico**: `diary_entry_id` nullable verso
+  `DentalDiaryEntry` — un intervento su un dente può referenziare la nota
+  di diario della stessa seduta, ma non è obbligatorio (es. rilevazione
+  durante un controllo, senza nota di diario associata).
+- **RBAC — deliberatamente più stretto della cartella clinica generale**:
+  usa i permessi `odontogram.view`/`odontogram.update` (già esistenti nel
+  catalogo, riservati ad admin/odontoiatra), **non**
+  `ClinicalAccessChecker` (pieno OR igiene). L'igienista **non ha nessun
+  accesso** all'odontogramma — confermato esplicitamente: "secondo la
+  sua competenza" qui significa nessuno, la diagnosi/stato degli
+  elementi dentali non rientra nella competenza igienica. Se dovesse
+  cambiare in futuro, il punto d'ingresso è
+  `App\Modules\Dental\Policies\DentalToothConditionPolicy`.
+- **Audit**: scritture via trait `Auditable` come sul diario (azione
+  generica `created`, sufficiente — ogni record è un evento singolo e
+  immutabile). Lettura: stessa logica della cartella clinica, un'unica
+  voce esplicita per apertura pagina — `odontogram_viewed`, nome
+  distinto da `clinical_record_viewed` perché sono due pagine separate.
+- **Cifratura**: cast `encrypted` su `notes`, stesso meccanismo del resto
+  della cartella clinica.
+- **UI** (`resources/js/Pages/Dental/Odontogram.jsx`): arcata renderizzata
+  nell'ordine di lettura clinico standard (non l'ordine numerico grezzo
+  11-18/21-28/...), con toggle permanenti/decidui per la dentizione
+  mista. Colore per stato a colpo d'occhio (mappa fissa in
+  `CONDITION_COLORS`); click su un dente apre un pannello con stato
+  attuale, storico completo e — solo per chi ha `odontogram.update` — il
+  form per registrare un nuovo stato. Pagina separata dalla cartella
+  clinica generale (propria rotta `dental.odontogram.show`), linkata da
+  essa quando l'utente ha `odontogram.view`.
 
 ## Convenzioni
 

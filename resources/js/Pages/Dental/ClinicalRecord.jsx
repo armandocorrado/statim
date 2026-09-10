@@ -2,7 +2,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 
 const ALERT_CATEGORY_LABELS = { allergy: 'Allergia', risk: 'Fattore di rischio' };
 const SECTION_LABELS = { general: 'Generale', hygiene: 'Igiene' };
@@ -365,6 +365,8 @@ export default function ClinicalRecord({
     hasFullAccess,
     canManage,
 }) {
+    const canViewOdontogram = usePage().props.auth.permissions.includes('odontogram.view');
+
     return (
         <AuthenticatedLayout
             header={
@@ -377,12 +379,22 @@ export default function ClinicalRecord({
 
             <div className="py-12">
                 <div className="mx-auto max-w-4xl space-y-6 sm:px-6 lg:px-8">
-                    <Link
-                        href={route('patients.show', patient.id)}
-                        className="text-sm text-indigo-600 hover:underline"
-                    >
-                        ← Torna alla scheda paziente
-                    </Link>
+                    <div className="flex items-center justify-between">
+                        <Link
+                            href={route('patients.show', patient.id)}
+                            className="text-sm text-indigo-600 hover:underline"
+                        >
+                            ← Torna alla scheda paziente
+                        </Link>
+                        {canViewOdontogram && (
+                            <Link
+                                href={route('dental.odontogram.show', patient.id)}
+                                className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+                            >
+                                Odontogramma
+                            </Link>
+                        )}
+                    </div>
 
                     <AlertsBanner
                         alerts={alerts}

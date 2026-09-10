@@ -12,10 +12,14 @@ Verticale clinico odontoiatrico. Contiene:
   `DentalDiaryEntry`, `DentalDocument`) — anamnesi, alert di sicurezza
   (allergie/rischi), diario clinico append-only, documenti su storage
   privato. Dettagli completi in `CLAUDE.md`, sezione "Cartella clinica".
+- **Odontogramma interattivo** (`Models/DentalToothCondition`,
+  `Support/FdiToothNumbers`, `Support/ToothConditionResolver`) —
+  numerazione FDI/ISO (permanenti + decidui), storico append-only degli
+  stati per dente, RBAC riservato ad admin/odontoiatra. Dettagli completi
+  in `CLAUDE.md`, sezione "Odontogramma interattivo".
 
-**Ancora da fare**: odontogramma interattivo (componente visuale a sé),
-integrazione scanner/sistemi radiologici, FSE, collegamento a piani di
-cura/preventivi.
+**Ancora da fare**: integrazione scanner/sistemi radiologici, FSE,
+collegamento a piani di cura/preventivi.
 
 ## Regola di confine
 

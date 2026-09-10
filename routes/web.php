@@ -14,6 +14,7 @@ use App\Modules\Dental\Http\Controllers\DentalAnamnesisController;
 use App\Modules\Dental\Http\Controllers\DentalClinicalRecordController;
 use App\Modules\Dental\Http\Controllers\DentalDiaryEntryController;
 use App\Modules\Dental\Http\Controllers\DentalDocumentController;
+use App\Modules\Dental\Http\Controllers\DentalOdontogramController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -57,6 +58,8 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::post('patients/{patient}/dental/diary', [DentalDiaryEntryController::class, 'store'])->name('dental.diary.store');
     Route::post('patients/{patient}/dental/documents', [DentalDocumentController::class, 'store'])->name('dental.documents.store');
     Route::get('patients/{patient}/dental/documents/{document}/download', [DentalDocumentController::class, 'download'])->name('dental.documents.download');
+    Route::get('patients/{patient}/dental/odontogram', [DentalOdontogramController::class, 'show'])->name('dental.odontogram.show');
+    Route::post('patients/{patient}/dental/odontogram', [DentalOdontogramController::class, 'store'])->name('dental.odontogram.store');
 
     Route::post('patients/{patient}/consents', [ConsentController::class, 'store'])->name('patients.consents.store');
     Route::patch('patients/{patient}/consents/{consent}/revoke', [ConsentController::class, 'revoke'])->name('patients.consents.revoke');
