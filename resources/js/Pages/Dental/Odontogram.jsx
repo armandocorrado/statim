@@ -5,6 +5,11 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 // Layout visivo standard di un cartellino odontoiatrico: arcata superiore
 // e inferiore, quadrante del paziente a destra dello schermo a sinistra —
 // non l'ordine numerico grezzo (11-18, 21-28, ...) ma quello con cui un
@@ -174,7 +179,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, conditionOptions,
                                 <option value="">— Nessuna —</option>
                                 {diaryEntries.map((entry) => (
                                     <option key={entry.id} value={entry.id}>
-                                        {entry.entry_date} ({entry.section === 'hygiene' ? 'Igiene' : 'Generale'})
+                                        {formatDate(entry.entry_date)} ({entry.section === 'hygiene' ? 'Igiene' : 'Generale'})
                                     </option>
                                 ))}
                             </select>
@@ -203,12 +208,12 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, conditionOptions,
                 {toothHistory.map((record) => (
                     <li key={record.id} className="border-b border-gray-100 pb-2 text-sm">
                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{record.recorded_date}</span>
+                            <span>{formatDate(record.recorded_date)}</span>
                             <span>—</span>
                             <span>{record.operator.name}</span>
                             {record.diary_entry && (
                                 <span className="rounded-full bg-gray-100 px-2 py-0.5">
-                                    diario {record.diary_entry.entry_date}
+                                    diario {formatDate(record.diary_entry.entry_date)}
                                 </span>
                             )}
                         </div>
