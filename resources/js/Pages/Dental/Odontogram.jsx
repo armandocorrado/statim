@@ -121,6 +121,14 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, conditionOptions,
         e.preventDefault();
         post(route('dental.odontogram.store', patientId), {
             preserveScroll: true,
+            // Senza preserveState, Inertia rimonta l'intera pagina dopo il
+            // post: il pannello del dente selezionato (stato locale React,
+            // non una prop) si richiuderebbe, dando l'impressione che lo
+            // storico non si aggiorni "in tempo reale" — le prop (storico,
+            // stato corrente) arrivano comunque fresche dal server in
+            // entrambi i casi, preserveState mantiene solo il pannello
+            // aperto sullo stesso dente.
+            preserveState: true,
             onSuccess: () => {
                 reset('notes', 'diary_entry_id');
                 onDone?.();
