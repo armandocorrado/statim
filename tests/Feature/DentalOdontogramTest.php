@@ -2,7 +2,9 @@
 
 use App\Core\Patients\Models\Patient;
 use App\Core\Tenancy\Models\Tenant;
+use App\Modules\Dental\Enums\DentalRecordSection;
 use App\Modules\Dental\Models\DentalDiaryEntry;
+use App\Modules\Dental\Models\DentalDocument;
 use App\Modules\Dental\Models\DentalToothCondition;
 
 test('odontoiatra can open the odontogram', function () {
@@ -246,4 +248,66 @@ test('notes on a tooth condition are encrypted at rest', function () {
 
     expect($raw->notes)->not->toBe('Nota clinica sensibile')
         ->and($condition->notes)->toBe('Nota clinica sensibile');
+});
+
+test('the tooth panel shows documents linked to that tooth', function () {
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+
+    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    \App\Modules\Dental\Models\DentalDocumentTooth::factory()->create(['tenant_id' => $tenant->id, 'document_id' => $document->id, 'tooth_number' => '16']);
+
+    $unrelatedDocument = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    \App\Modules\Dental\Models\DentalDocumentTooth::factory()->create(['tenant_id' => $tenant->id, 'document_id' => $unrelatedDocument->id, 'tooth_number' => '27']);
+
+    $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/odontogram")
+        ->assertInertia(fn ($page) => $page
+            ->has('documentsByTooth.16', 1)
+            ->where('documentsByTooth.16.0.id', $document->id)
+            ->where('documentsByTooth.27.0.id', $unrelatedDocument->id)
+        );
+});
+
+test('a document with no tooth link does not appear in any tooth panel', function () {
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+
+    DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+
+    $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/odontogram")
+        ->assertInertia(fn ($page) => $page->where('documentsByTooth', []));
+});
+
+test('documents linked to teeth of another patient are not leaked', function () {
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $otherPatient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+
+    $otherDocument = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $otherPatient->id]);
+    \App\Modules\Dental\Models\DentalDocumentTooth::factory()->create(['tenant_id' => $tenant->id, 'document_id' => $otherDocument->id, 'tooth_number' => '16']);
+
+    $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/odontogram")
+        ->assertInertia(fn ($page) => $page->where('documentsByTooth', []));
+});
+
+test('downloading a document reached through the tooth panel still enforces the existing document policy', function () {
+    \Illuminate\Support\Facades\Storage::fake('local');
+
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $segreteria = userForTenant($tenant, 'segreteria');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+
+    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    \App\Modules\Dental\Models\DentalDocumentTooth::factory()->create(['tenant_id' => $tenant->id, 'document_id' => $document->id, 'tooth_number' => '16']);
+    \Illuminate\Support\Facades\Storage::disk('local')->put($document->file_path, 'fake pdf content');
+
+    $this->actingAs($segreteria)->get("/patients/{$patient->id}/dental/documents/{$document->id}/download")
+        ->assertForbidden();
+
+    $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/documents/{$document->id}/download")
+        ->assertOk();
 });

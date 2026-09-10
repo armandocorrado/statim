@@ -6,6 +6,7 @@ use App\Core\Patients\Models\Patient;
 use App\Http\Controllers\Controller;
 use App\Modules\Dental\Http\Requests\StoreDentalDocumentRequest;
 use App\Modules\Dental\Models\DentalDocument;
+use App\Modules\Dental\Models\DentalDocumentTooth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -43,6 +44,13 @@ class DentalDocumentController extends Controller
         $document->file_size = $file->getSize();
         $document->uploaded_by = $request->user()->id;
         $document->save();
+
+        foreach (array_unique($data['teeth'] ?? []) as $toothNumber) {
+            $link = new DentalDocumentTooth(['tooth_number' => $toothNumber]);
+            $link->document_id = $document->id;
+            $link->tenant_id = $patient->tenant_id;
+            $link->save();
+        }
 
         return back()->with('success', 'Documento caricato.');
     }

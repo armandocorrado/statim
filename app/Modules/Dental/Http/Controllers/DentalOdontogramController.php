@@ -5,9 +5,11 @@ namespace App\Modules\Dental\Http\Controllers;
 use App\Core\Audit\Support\AuditRecorder;
 use App\Core\Patients\Models\Patient;
 use App\Http\Controllers\Controller;
+use App\Modules\Dental\Enums\DentalRecordSection;
 use App\Modules\Dental\Enums\ToothCondition;
 use App\Modules\Dental\Http\Requests\StoreDentalToothConditionRequest;
 use App\Modules\Dental\Models\DentalDiaryEntry;
+use App\Modules\Dental\Models\DentalDocumentTooth;
 use App\Modules\Dental\Models\DentalToothCondition;
 use App\Modules\Dental\Support\FdiToothNumbers;
 use App\Modules\Dental\Support\ToothConditionResolver;
@@ -26,7 +28,29 @@ class DentalOdontogramController extends Controller
     {
         $this->authorize('viewOdontogram', [DentalToothCondition::class, $patient]);
 
+        $user = $request->user();
+        // Chi apre l'odontogramma ha oggi sempre clinical_records.view
+        // (solo admin/odontoiatra hanno odontogram.view) — questo filtro
+        // è comunque applicato per difesa in profondità, stessa logica di
+        // DentalClinicalRecordController::show(), così il collegamento
+        // dente↔documento non apre un varco se il catalogo RBAC cambiasse.
+        $hasFullAccess = $user->can('clinical_records.view');
+
         $currentStates = ToothConditionResolver::currentStates($patient->id);
+
+        $documentsByTooth = DentalDocumentTooth::query()
+            ->whereHas('document', fn ($query) => $query->where('patient_id', $patient->id))
+            ->with('document:id,section,document_type,description,original_filename,created_at')
+            ->when(
+                ! $hasFullAccess,
+                fn ($query) => $query->whereHas(
+                    'document',
+                    fn ($q) => $q->where('section', DentalRecordSection::Hygiene->value),
+                ),
+            )
+            ->get()
+            ->groupBy('tooth_number')
+            ->map(fn ($rows) => $rows->pluck('document')->values());
 
         $history = DentalToothCondition::query()
             ->where('patient_id', $patient->id)
@@ -43,6 +67,7 @@ class DentalOdontogramController extends Controller
             'deciduousTeeth' => FdiToothNumbers::deciduous(),
             'currentStates' => $currentStates->map->only(['id', 'tooth_number', 'condition_type', 'recorded_date']),
             'history' => $history,
+            'documentsByTooth' => $documentsByTooth,
             'conditionOptions' => array_map(
                 fn (ToothCondition $case) => ['value' => $case->value, 'label' => $case->label()],
                 ToothCondition::cases(),
@@ -50,7 +75,7 @@ class DentalOdontogramController extends Controller
             'diaryEntries' => DentalDiaryEntry::where('patient_id', $patient->id)
                 ->orderByDesc('entry_date')
                 ->get(['id', 'entry_date', 'section']),
-            'canManage' => $request->user()->can('odontogram.update'),
+            'canManage' => $user->can('odontogram.update'),
         ]);
     }
 

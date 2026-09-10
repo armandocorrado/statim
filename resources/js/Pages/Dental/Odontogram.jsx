@@ -105,9 +105,10 @@ function Legend({ conditionOptions }) {
     );
 }
 
-function ToothPanel({ patientId, tooth, history, diaryEntries, conditionOptions, canManage, onDone }) {
+function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth, conditionOptions, canManage, onDone }) {
     const toothHistory = history.filter((record) => record.tooth_number === tooth);
     const current = toothHistory[0] ?? null;
+    const toothDocuments = documentsByTooth[tooth] ?? [];
 
     const { data, setData, post, processing, errors, reset } = useForm({
         tooth_number: tooth,
@@ -210,6 +211,29 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, conditionOptions,
                 </form>
             )}
 
+            <h4 className="mb-2 text-sm font-semibold text-slate-700">Documenti collegati</h4>
+            {toothDocuments.length === 0 && (
+                <p className="mb-4 text-sm text-gray-400">Nessun documento collegato a questo dente.</p>
+            )}
+            {toothDocuments.length > 0 && (
+                <ul className="mb-4 space-y-1">
+                    {toothDocuments.map((document) => (
+                        <li key={document.id} className="flex items-center justify-between text-sm">
+                            <span>
+                                <span className="font-medium text-slate-800">{document.original_filename}</span>{' '}
+                                <span className="text-xs text-gray-500">({document.document_type})</span>
+                            </span>
+                            <a
+                                href={route('dental.documents.download', [patientId, document.id])}
+                                className="text-indigo-600 hover:underline"
+                            >
+                                Scarica
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
             <h4 className="mb-2 text-sm font-semibold text-slate-700">Storico</h4>
             {toothHistory.length === 0 && <p className="text-sm text-gray-400">Nessun evento registrato per questo dente.</p>}
             <ul className="space-y-2">
@@ -242,6 +266,7 @@ export default function Odontogram({
     deciduousTeeth,
     currentStates,
     history,
+    documentsByTooth,
     conditionOptions,
     diaryEntries,
     canManage,
@@ -309,6 +334,7 @@ export default function Odontogram({
                             tooth={selectedTooth}
                             history={history}
                             diaryEntries={diaryEntries}
+                            documentsByTooth={documentsByTooth}
                             conditionOptions={conditionOptions}
                             canManage={canManage}
                             onDone={() => {}}

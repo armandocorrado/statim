@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -51,6 +52,17 @@ class DentalDocument extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    /**
+     * Denti a cui il documento è collegato — facoltativo, mai obbligatorio
+     * (un OPT d'insieme può non riferirsi a nessun dente specifico).
+     * Valorizzato solo al momento dell'upload, mai dopo — vedi
+     * DentalDocumentTooth.
+     */
+    public function teeth(): HasMany
+    {
+        return $this->hasMany(DentalDocumentTooth::class, 'document_id');
     }
 
     /**

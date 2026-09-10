@@ -241,12 +241,13 @@ function DiarySection({ patientId, entries, canManage, hasFullAccess }) {
     );
 }
 
-function DocumentsSection({ patientId, documents, canManage, hasFullAccess }) {
+function DocumentsSection({ patientId, documents, canManage, hasFullAccess, permanentTeeth, deciduousTeeth }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         section: hasFullAccess ? 'general' : 'hygiene',
         document_type: 'referto',
         description: '',
         file: null,
+        teeth: [],
     });
 
     const submit = (e) => {
@@ -254,8 +255,17 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess }) {
         post(route('dental.documents.store', patientId), {
             preserveScroll: true,
             forceFormData: true,
-            onSuccess: () => reset('description', 'file'),
+            onSuccess: () => reset('description', 'file', 'teeth'),
         });
+    };
+
+    const toggleTooth = (toothNumber) => {
+        setData(
+            'teeth',
+            data.teeth.includes(toothNumber)
+                ? data.teeth.filter((t) => t !== toothNumber)
+                : [...data.teeth, toothNumber],
+        );
     };
 
     return (
@@ -277,6 +287,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess }) {
                             >
                                 <option value="referto">Referto</option>
                                 <option value="radiografia">Radiografia</option>
+                                <option value="panoramica">Panoramica/OPT</option>
                                 <option value="foto">Foto</option>
                                 <option value="altro">Altro</option>
                             </select>
@@ -315,6 +326,50 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess }) {
                     {errors.file && (
                         <p className="text-xs text-red-600">{errors.file}</p>
                     )}
+
+                    <div>
+                        <InputLabel value="Denti collegati (facoltativo)" />
+                        <div className="mt-1 flex flex-wrap gap-1">
+                            {permanentTeeth.map((tooth) => (
+                                <button
+                                    key={tooth}
+                                    type="button"
+                                    onClick={() => toggleTooth(tooth)}
+                                    className={
+                                        'rounded border px-1.5 py-0.5 text-xs ' +
+                                        (data.teeth.includes(tooth)
+                                            ? 'border-indigo-600 bg-indigo-600 text-white'
+                                            : 'border-gray-300 bg-white text-slate-600')
+                                    }
+                                >
+                                    {tooth}
+                                </button>
+                            ))}
+                        </div>
+                        <details className="mt-2">
+                            <summary className="cursor-pointer text-xs text-gray-500">
+                                Denti decidui (dentizione mista)
+                            </summary>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                                {deciduousTeeth.map((tooth) => (
+                                    <button
+                                        key={tooth}
+                                        type="button"
+                                        onClick={() => toggleTooth(tooth)}
+                                        className={
+                                            'rounded border px-1.5 py-0.5 text-xs ' +
+                                            (data.teeth.includes(tooth)
+                                                ? 'border-indigo-600 bg-indigo-600 text-white'
+                                                : 'border-gray-300 bg-white text-slate-600')
+                                        }
+                                    >
+                                        {tooth}
+                                    </button>
+                                ))}
+                            </div>
+                        </details>
+                    </div>
+
                     <SecondaryButton type="submit" disabled={processing}>
                         Carica documento
                     </SecondaryButton>
@@ -339,6 +394,11 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess }) {
                                 {SECTION_LABELS[document.section]}) —{' '}
                                 {document.description}
                             </span>
+                            {document.teeth.length > 0 && (
+                                <span className="ml-2 rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-700">
+                                    Denti: {document.teeth.map((t) => t.tooth_number).join(', ')}
+                                </span>
+                            )}
                         </div>
                         <a
                             href={route('dental.documents.download', [
@@ -362,6 +422,8 @@ export default function ClinicalRecord({
     alerts,
     diaryEntries,
     documents,
+    permanentTeeth,
+    deciduousTeeth,
     hasFullAccess,
     canManage,
 }) {
@@ -422,6 +484,8 @@ export default function ClinicalRecord({
                         documents={documents}
                         canManage={canManage}
                         hasFullAccess={hasFullAccess}
+                        permanentTeeth={permanentTeeth}
+                        deciduousTeeth={deciduousTeeth}
                     />
                 </div>
             </div>

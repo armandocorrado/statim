@@ -577,6 +577,58 @@ pronte per un futuro aggancio.
   clinica generale (propria rotta `dental.odontogram.show`), linkata da
   essa quando l'utente ha `odontogram.view`.
 
+### Collegamento documento ↔ dente (`DentalDocumentTooth`)
+
+Un documento clinico (`DentalDocument`: referto, radiografia, foto, ora
+anche panoramica/OPT) può riferirsi a uno o più denti specifici, per
+vedere dal pannello di un dente anche le immagini/radiografie che lo
+riguardano — senza toccare cifratura/storage dei documenti già in essere.
+
+- **Non è un many-to-many fra due entità**: come per
+  `DentalToothCondition`, il "dente" non è mai una riga di una tabella
+  propria — è solo un codice FDI. `DentalDocumentTooth` è quindi un
+  semplice *one-to-many* da `DentalDocument` (`document_id`,
+  `tooth_number` validato contro `FdiToothNumbers::all()`), non una
+  pivot fra `DentalDocument` e un modello "Tooth" inesistente.
+- **Facoltativo e multiplo, mai obbligatorio**: un'endorale può riguardare
+  1-2 denti, un OPT d'insieme nessuno in particolare — zero righe in
+  `dental_document_teeth` è lo stato normale per un documento senza
+  denti specifici, non un caso speciale da rappresentare a parte.
+- **Niente auto-link per l'OPT — confermato esplicitamente**: anche una
+  panoramica non genera automaticamente un collegamento a tutti i denti.
+  `document_type = 'panoramica'` resta solo un'etichetta come le altre
+  (`document_type` è testo libero, mai stato un enum — aggiungerla non
+  ha richiesto nessuna migrazione, solo una nuova opzione nel form); il
+  clinico sceglie manualmente quali denti collegare, se lo ritiene utile.
+- **Append-only e immutabile solo al momento dell'upload — confermato
+  esplicitamente**: le righe si creano un'unica volta, nella stessa
+  richiesta di `DentalDocumentController::store()`, e non sono mai
+  modificabili dopo (nessuna colonna `updated_at`, nessuna rotta
+  dedicata). Un documento già caricato senza denti collegati **non può**
+  riceverne in un secondo momento — stessa immutabilità già in vigore su
+  `DentalDocument` stesso.
+- **Nessun permesso e nessuna Policy nuovi**: l'autorizzazione resta
+  quella già esistente di `DentalDocumentPolicy` — `createFor()` per
+  scegliere i denti in fase di upload (quindi anche l'igienista può
+  collegare denti su un documento di sezione `hygiene` che è già
+  autorizzato a caricare), `view()` per il download raggiunto dal
+  pannello dente. Il collegamento non introduce nessun varco nuovo: il
+  download resta sempre dietro la stessa Policy, il pannello dente si
+  limita a mostrare un link alla stessa rotta di sempre.
+- **Difesa in profondità nell'odontogramma**: `DentalOdontogramController`
+  applica lo stesso filtro di sezione (`hasFullAccess`/hygiene) già usato
+  da `DentalClinicalRecordController` quando costruisce
+  `documentsByTooth`, anche se oggi chi apre l'odontogramma (solo
+  admin/odontoiatra) ha già accesso pieno a entrambe le sezioni per
+  costruzione — se il catalogo RBAC cambiasse, il filtro è già lì.
+- **Nessuna voce di audit dedicata**: la riga si crea nello stesso
+  istante/stesso attore dell'upload del documento, già tracciato dal
+  trait `Auditable` su `DentalDocument` — una seconda voce sarebbe
+  rumore duplicato, non nuova informazione. Anche la sola lettura tramite
+  il pannello dente non aggiunge un audit nuovo, stessa logica per cui i
+  documenti elencati nella cartella clinica generale non generano un
+  evento per ciascuno.
+
 ## Convenzioni
 
 - **Chiavi primarie**: ULID (`HasUlids`) su `tenants`, `users`, `patients`,

@@ -10,6 +10,7 @@ use App\Modules\Dental\Models\DentalAlert;
 use App\Modules\Dental\Models\DentalAnamnesis;
 use App\Modules\Dental\Models\DentalDiaryEntry;
 use App\Modules\Dental\Models\DentalDocument;
+use App\Modules\Dental\Support\FdiToothNumbers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,7 +41,7 @@ class DentalClinicalRecordController extends Controller
 
         $documents = DentalDocument::query()
             ->where('patient_id', $patient->id)
-            ->with('uploader:id,name')
+            ->with('uploader:id,name', 'teeth:id,document_id,tooth_number')
             ->when(! $hasFullAccess, fn ($query) => $query->where('section', DentalRecordSection::Hygiene->value))
             ->orderByDesc('created_at')
             ->get();
@@ -53,6 +54,8 @@ class DentalClinicalRecordController extends Controller
             'alerts' => DentalAlert::where('patient_id', $patient->id)->where('is_active', true)->get(),
             'diaryEntries' => $diaryEntries,
             'documents' => $documents,
+            'permanentTeeth' => FdiToothNumbers::permanent(),
+            'deciduousTeeth' => FdiToothNumbers::deciduous(),
             'hasFullAccess' => $hasFullAccess,
             'canManage' => $user->can('clinical_records.update') || $user->can('clinical_records.hygiene.update'),
         ]);
