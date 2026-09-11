@@ -13,7 +13,7 @@ test('a non-clinical role never receives a clinical data permission', function (
     // ai dati clinici. Admin studio is deliberately exempt — it has full
     // access to everything in its studio, clinical data included.
     $clinicalRoles = ['admin', 'odontoiatra', 'igienista'];
-    $clinicalPermissionPattern = '/^(clinical_records\.|odontogram\.|treatment_plans\.clinical\.)/';
+    $clinicalPermissionPattern = '/^(clinical_records\.|odontogram\.|treatment_plans\.clinical\.|treatment_plans\.hygiene\.)/';
 
     foreach (TenantRoleProvisioner::defaultRolePermissions() as $role => $permissions) {
         if (in_array($role, $clinicalRoles, true)) {

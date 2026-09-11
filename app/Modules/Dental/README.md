@@ -17,9 +17,16 @@ Verticale clinico odontoiatrico. Contiene:
   numerazione FDI/ISO (permanenti + decidui), storico append-only degli
   stati per dente, RBAC riservato ad admin/odontoiatra. Dettagli completi
   in `CLAUDE.md`, sezione "Odontogramma interattivo".
+- **Piano di cura** (`Models/DentalTreatmentPlan`,
+  `DentalTreatmentPlanItem`, `DentalTreatmentPlanItemTooth`,
+  `Support/TreatmentPlanAccessChecker`,
+  `Support/DentalServiceCatalogProvisioner`) — la parte clinica del
+  flusso preventivi: genera un `Quote` (`App\Core\Quotes`, CORE) senza
+  che Core importi mai nulla da qui — vedi `CLAUDE.md`, sezione
+  "Preventivi e piani di cura", per il meccanismo di riferimento opaco
+  che tiene i due mondi separati.
 
-**Ancora da fare**: integrazione scanner/sistemi radiologici, FSE,
-collegamento a piani di cura/preventivi.
+**Ancora da fare**: integrazione scanner/sistemi radiologici, FSE.
 
 ## Regola di confine
 

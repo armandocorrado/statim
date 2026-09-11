@@ -9,11 +9,13 @@ use App\Modules\Dental\Models\DentalAnamnesis;
 use App\Modules\Dental\Models\DentalDiaryEntry;
 use App\Modules\Dental\Models\DentalDocument;
 use App\Modules\Dental\Models\DentalToothCondition;
+use App\Modules\Dental\Models\DentalTreatmentPlan;
 use App\Modules\Dental\Policies\DentalAlertPolicy;
 use App\Modules\Dental\Policies\DentalAnamnesisPolicy;
 use App\Modules\Dental\Policies\DentalDiaryEntryPolicy;
 use App\Modules\Dental\Policies\DentalDocumentPolicy;
 use App\Modules\Dental\Policies\DentalToothConditionPolicy;
+use App\Modules\Dental\Policies\DentalTreatmentPlanPolicy;
 use App\Modules\Dental\Support\ClinicalAccessChecker;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -53,6 +55,12 @@ class DentalServiceProvider extends ServiceProvider
                 'agenda.view.own', 'agenda.manage.own',
                 'reports.production.own',
                 'clinical_records.hygiene.view', 'clinical_records.hygiene.update',
+                // Vede il piano di cura per intero (treatment_plans.view)
+                // ma può gestirne solo le voci di categoria Hygiene — vedi
+                // TreatmentPlanAccessChecker::canManageItem(). Nessun
+                // accesso a treatment_plans.administer: l'igienista non
+                // genera/emette preventivi, resta amministrativo.
+                'treatment_plans.view', 'treatment_plans.hygiene.manage',
             ],
         ]);
 
@@ -61,6 +69,7 @@ class DentalServiceProvider extends ServiceProvider
         Gate::policy(DentalDiaryEntry::class, DentalDiaryEntryPolicy::class);
         Gate::policy(DentalDocument::class, DentalDocumentPolicy::class);
         Gate::policy(DentalToothCondition::class, DentalToothConditionPolicy::class);
+        Gate::policy(DentalTreatmentPlan::class, DentalTreatmentPlanPolicy::class);
 
         // Apertura della scheda clinica nel suo insieme — non è legata al
         // ciclo di vita di un singolo model (l'anamnesi potrebbe non

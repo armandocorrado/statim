@@ -104,8 +104,8 @@ tenant.** Non fidarsi mai della sola global scope.
 - **Vincolo invalicabile**, verificato da un test di regressione
   (`tests/Feature/RoleGovernanceTest.php`): nessun ruolo non clinico
   (`aso`, `segreteria` — `admin` è l'eccezione esplicita, ha accesso a
-  tutto) può mai ricevere un permesso `clinical_records.*`, `odontogram.*`
-  o `treatment_plans.clinical.manage`.
+  tutto) può mai ricevere un permesso `clinical_records.*`, `odontogram.*`,
+  `treatment_plans.clinical.manage` o `treatment_plans.hygiene.manage`.
 - Provisioning di un nuovo tenant: chiamare
   `TenantRoleProvisioner::provisionDefaults($tenant)` prima di assegnare
   ruoli agli utenti di quel tenant.
@@ -442,6 +442,106 @@ dietro interfacce con implementazioni mock, vedi sotto.
   documento emesso), tracciamento incassi/pagamenti (`payments.manage`
   riservato per quello), intestatario azienda (non-`Patient`), le
   integrazioni reali stesse (vedi sopra).
+
+## Preventivi e piani di cura (`App\Core\Quotes` + `App\Modules\Dental`)
+
+Flusso: odontogramma → **piano di cura** (clinico, verticale) → **preventivo**
+(economico, core) → stato (bozza → emesso → accettato/rifiutato → in corso →
+completato) → tracciamento accettazione → futuro aggancio a Fatturazione.
+
+- **Il confine core/verticale non passa per un'astrazione condivisa, passa
+  per un riferimento opaco.** `App\Core\Quotes\Models\Quote` (il
+  preventivo) ha `source_treatment_plan_id` — una **stringa semplice,
+  nessuna FK, nessuna relazione Eloquent lato Core** — verso il piano di
+  cura che l'ha generato. Core la porta con sé ma non la interpreta mai.
+  È `App\Modules\Dental\Models\DentalTreatmentPlan` (che può dipendere da
+  Core liberamente) a definire la relazione nel verso permesso:
+  `DentalTreatmentPlan::quotes(): HasMany`. Stesso meccanismo, un livello
+  più giù, fra `QuoteLine.source_treatment_plan_item_id` e
+  `DentalTreatmentPlanItem::quoteLines()`. Identico principio di
+  `TenantRoleProvisioner::extend()`: Core espone un punto di aggancio
+  generico, il verticale fornisce l'identità concreta.
+- **`QuoteLine.description` è testo libero congelato alla generazione**
+  (es. "Otturazione — dente 16, 17"), mai un join live né una colonna
+  strutturata per i denti — Core non deve mai sapere cos'è un numero di
+  dente. È `App\Modules\Dental\Http\Controllers\DentalTreatmentPlanController::generateQuote()`
+  a comporre il testo (unendo il nome della prestazione e i denti
+  collegati) prima di passarlo a Core. Stessa logica dello snapshot
+  congelato di `BillingDocument.recipient_*`: se il piano cambia dopo, un
+  preventivo già generato non deve mutare sotto i piedi di chi l'ha già
+  mostrato al paziente. Un piano può generare **più preventivi nel
+  tempo** (es. una revisione dopo trattativa) — ognuno resta uno snapshot
+  indipendente, nessun vincolo di unicità fra piano e preventivo.
+- **Listino prestazioni** (`App\Core\Quotes\Models\ServiceCatalogItem`):
+  per-tenant, profession-agnostic come `AppointmentType` — Core non sa
+  cosa significhi "Otturazione". `category` è testo libero **non
+  interpretato da Core**: `App\Modules\Dental\Support\TreatmentPlanAccessChecker`
+  lo confronta come stringa contro `DentalRecordSection::Hygiene->value`
+  senza che `ServiceCatalogItem` importi mai quell'enum — un valore dato,
+  non un accoppiamento di codice. `tenant_id` è (a differenza degli altri
+  model tenant-scoped del progetto) mass-assignable: serve a
+  `App\Modules\Dental\Support\DentalServiceCatalogProvisioner`, che seeda
+  il listino di default per un nuovo tenant fuori dal ciclo HTTP — stesso
+  motivo per cui `AppointmentType` lo fa già. Nessuna rotta di delete: una
+  voce si disattiva (`is_active = false`), un piano di cura passato
+  potrebbe ancora referenziarla. `default_duration_minutes` è
+  predisposto per l'Agenda futura, **non collegato ora**.
+- **Piano di cura NON append-only — a differenza del resto della cartella
+  clinica**: diario/documenti/stati dentali sono append-only perché
+  registrano eventi accaduti; un piano è un documento di lavoro in bozza,
+  si aggiunge/toglie una voce mentre si valuta il da farsi. La modifica
+  resta comunque tracciata dal diff generico di `Auditable` sul piano
+  stesso. Le voci (`DentalTreatmentPlanItem`) sono **sostituite in
+  blocco** a ogni salvataggio (stesso pattern di `BillingDocumentLine`),
+  non un'API di CRUD per singola voce — così come i loro denti collegati
+  (`DentalTreatmentPlanItemTooth`, stesso schema di `DentalDocumentTooth`
+  ma mutabile invece di immutabile-dopo-la-creazione).
+- **RBAC — un vuoto reale colmato, confermato esplicitamente**:
+  l'igienista non aveva **nessun** permesso `treatment_plans.*`. Ora ha
+  `treatment_plans.view` (vede il piano per intero) e un nuovo permesso
+  `treatment_plans.hygiene.manage` (gestisce **solo** le voci la cui
+  `ServiceCatalogItem.category` è `hygiene`) —
+  `TreatmentPlanAccessChecker::canManageItem()` verifica ogni voce
+  inviata individualmente in `UpdateDentalTreatmentPlanItemsRequest`, non
+  solo che l'utente abbia *un* permesso qualunque sul piano nel suo
+  insieme. `treatment_plans.clinical.manage` (odontoiatra/admin) copre
+  invece qualunque categoria. **Il preventivo resta amministrativo
+  end-to-end**: solo `treatment_plans.administer` (admin/segreteria) può
+  generare un preventivo dal piano (`DentalTreatmentPlanPolicy::generateQuote()`)
+  o farlo transitare di stato (`QuotePolicy::transition()`) — i ruoli
+  clinici lo vedono (`treatment_plans.view`) ma non ne gestiscono mai il
+  ciclo di vita commerciale, coerente con "segreteria gestisce
+  l'amministrativo, non definisce gli interventi clinici" letto anche al
+  contrario.
+- **Stati e transizioni** (`App\Core\Quotes\Enums\QuoteStatus` +
+  `App\Core\Quotes\Support\QuoteTransitions`): `Draft → Issued →
+  Accepted|Rejected → InProgress → Completed`, `Rejected`/`Completed`
+  terminali. `Draft → Issued` passa dall'azione dedicata `issue()` (che
+  congela i totali, stesso principio di `BillingDocument`), le altre
+  transizioni da un'unica mappa esplicita — non si può saltare da `Draft`
+  a `Completed`, né tornare indietro. Una sola colonna `responded_at`
+  copre sia l'accettazione sia il rifiuto (stati mutuamente esclusivi da
+  `Issued`), non due colonne separate — corrisponde letteralmente a
+  "stato + data di accettazione/rifiuto" della richiesta originale.
+- **Tasso di accettazione** = preventivi con stato
+  `Accepted`+`InProgress`+`Completed` / preventivi con **qualunque**
+  stato diverso da `Draft` — una bozza non è mai stata proposta al
+  paziente, non entra nel denominatore. Vista in `Quotes/Index.jsx`.
+- **Sconto**: un unico meccanismo, `discount_percent` (percentuale) per
+  riga — non anche un importo fisso alternativo, per evitare l'ambiguità
+  di quale dei due vince se entrambi fossero valorizzati. Si applica
+  prima di passare i dati a `BillingDocumentTotalsCalculator` (riusato
+  tal quale da Billing, non duplicato): lo sconto sconta il prezzo
+  unitario, quella classe resta quella già testata, senza doverle
+  insegnare a conoscere gli sconti.
+- **Rimandato deliberatamente** (registrato, non costruito): l'aggancio
+  fiscale vero e proprio (`BillingDocument` non ha ancora un
+  `source_quote_id` — quando arriverà, sarà una FK reale, Core↔Core,
+  nessun confine da rispettare, a differenza del riferimento opaco verso
+  Dental), invio del preventivo al paziente via email/portale, pagamenti
+  dilazionati/finanziamenti, collegamento retroattivo di denti a una voce
+  di piano già salvata (i denti si scelgono solo alla creazione/modifica
+  della voce), sconto a importo fisso come alternativa alla percentuale.
 
 ## Cartella clinica (`App\Modules\Dental`) — primo contenuto reale del verticale
 

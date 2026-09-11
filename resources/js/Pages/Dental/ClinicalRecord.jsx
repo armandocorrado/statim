@@ -447,6 +447,7 @@ export default function ClinicalRecord({
     canManage,
 }) {
     const canViewOdontogram = usePage().props.auth.permissions.includes('odontogram.view');
+    const canViewTreatmentPlans = usePage().props.auth.permissions.includes('treatment_plans.view');
 
     return (
         <AuthenticatedLayout
@@ -467,14 +468,24 @@ export default function ClinicalRecord({
                         >
                             ← Torna alla scheda paziente
                         </Link>
-                        {canViewOdontogram && (
-                            <Link
-                                href={route('dental.odontogram.show', patient.id)}
-                                className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
-                            >
-                                Odontogramma
-                            </Link>
-                        )}
+                        <div className="flex items-center gap-3">
+                            {canViewTreatmentPlans && (
+                                <Link
+                                    href={route('dental.treatment-plans.index', patient.id)}
+                                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                >
+                                    Piani di cura
+                                </Link>
+                            )}
+                            {canViewOdontogram && (
+                                <Link
+                                    href={route('dental.odontogram.show', patient.id)}
+                                    className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+                                >
+                                    Odontogramma
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
                     <AlertsBanner

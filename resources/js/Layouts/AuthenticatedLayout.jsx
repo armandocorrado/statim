@@ -12,6 +12,7 @@ export default function AuthenticatedLayout({ header, children }) {
         permissions?.includes('agenda.view.own') ||
         permissions?.includes('agenda.view.all');
     const canViewBilling = permissions?.includes('billing.view');
+    const canViewQuotes = permissions?.includes('treatment_plans.view');
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -55,6 +56,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         active={route().current('billing.*')}
                                     >
                                         Fatturazione
+                                    </NavLink>
+                                )}
+                                {canViewQuotes && (
+                                    <NavLink
+                                        href={route('quotes.index')}
+                                        active={route().current('quotes.*') || route().current('service-catalog.*')}
+                                    >
+                                        Preventivi
                                     </NavLink>
                                 )}
                                 {canViewUsers && (
@@ -189,6 +198,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 active={route().current('billing.*')}
                             >
                                 Fatturazione
+                            </ResponsiveNavLink>
+                        )}
+                        {canViewQuotes && (
+                            <ResponsiveNavLink
+                                href={route('quotes.index')}
+                                active={route().current('quotes.*') || route().current('service-catalog.*')}
+                            >
+                                Preventivi
                             </ResponsiveNavLink>
                         )}
                         {canViewUsers && (

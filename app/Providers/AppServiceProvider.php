@@ -17,6 +17,10 @@ use App\Core\Consents\Models\Consent;
 use App\Core\Consents\Policies\ConsentPolicy;
 use App\Core\Patients\Models\Patient;
 use App\Core\Patients\Policies\PatientPolicy;
+use App\Core\Quotes\Models\Quote;
+use App\Core\Quotes\Models\ServiceCatalogItem;
+use App\Core\Quotes\Policies\QuotePolicy;
+use App\Core\Quotes\Policies\ServiceCatalogItemPolicy;
 use App\Core\Users\Policies\UserPolicy;
 use App\Models\User;
 use Illuminate\Notifications\Events\NotificationSending;
@@ -54,6 +58,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Consent::class, ConsentPolicy::class);
         Gate::policy(Appointment::class, AppointmentPolicy::class);
         Gate::policy(BillingDocument::class, BillingDocumentPolicy::class);
+        Gate::policy(Quote::class, QuotePolicy::class);
+        Gate::policy(ServiceCatalogItem::class, ServiceCatalogItemPolicy::class);
 
         Event::listen(NotificationSending::class, EnforceConsentGate::class);
     }

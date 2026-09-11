@@ -7,6 +7,7 @@ use App\Core\Patients\Models\Patient;
 use App\Core\Tenancy\Models\Tenant;
 use App\Core\Users\Support\TenantRoleProvisioner;
 use App\Models\User;
+use App\Modules\Dental\Support\DentalServiceCatalogProvisioner;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
@@ -42,6 +43,7 @@ class DatabaseSeeder extends Seeder
 
         TenantRoleProvisioner::provisionDefaults($tenant);
         AppointmentTypeProvisioner::provisionDefaults($tenant);
+        DentalServiceCatalogProvisioner::provisionDefaults($tenant);
 
         $registrar = app(PermissionRegistrar::class);
         $registrar->setPermissionsTeamId($tenant->id);
