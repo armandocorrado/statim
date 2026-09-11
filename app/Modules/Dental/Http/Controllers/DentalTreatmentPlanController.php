@@ -8,7 +8,6 @@ use App\Core\Quotes\Models\Quote;
 use App\Core\Quotes\Models\ServiceCatalogItem;
 use App\Http\Controllers\Controller;
 use App\Modules\Dental\Http\Requests\StoreDentalTreatmentPlanRequest;
-use App\Modules\Dental\Http\Requests\UpdateDentalTreatmentPlanItemsRequest;
 use App\Modules\Dental\Models\DentalTreatmentPlan;
 use App\Modules\Dental\Support\FdiToothNumbers;
 use App\Modules\Dental\Support\TreatmentPlanAccessChecker;
@@ -63,35 +62,6 @@ class DentalTreatmentPlanController extends Controller
             'canManageHygieneOnly' => ! $user->can('treatment_plans.clinical.manage') && $user->can('treatment_plans.hygiene.manage'),
             'canGenerateQuote' => $user->can('generateQuote', $treatmentPlan),
         ]);
-    }
-
-    public function update(UpdateDentalTreatmentPlanItemsRequest $request, Patient $patient, DentalTreatmentPlan $treatmentPlan): RedirectResponse
-    {
-        abort_if($treatmentPlan->patient_id !== $patient->id, 404);
-
-        // cascadeOnDelete su dental_treatment_plan_item_teeth ripulisce i
-        // denti collegati automaticamente — nessun giro separato qui.
-        $treatmentPlan->items()->delete();
-
-        foreach (array_values($request->validated()['items']) as $index => $item) {
-            $newItem = $treatmentPlan->items()->make([
-                'service_catalog_item_id' => $item['service_catalog_item_id'],
-                'quantity' => $item['quantity'],
-                'notes' => $item['notes'] ?? null,
-                'session_group' => $item['session_group'] ?? null,
-                'sort_order' => $index,
-            ]);
-            $newItem->save();
-
-            foreach (array_unique($item['teeth'] ?? []) as $toothNumber) {
-                $newItem->teeth()->create([
-                    'tenant_id' => $treatmentPlan->tenant_id,
-                    'tooth_number' => $toothNumber,
-                ]);
-            }
-        }
-
-        return to_route('dental.treatment-plans.show', [$patient, $treatmentPlan])->with('success', 'Piano di cura aggiornato.');
     }
 
     public function destroy(Patient $patient, DentalTreatmentPlan $treatmentPlan): RedirectResponse

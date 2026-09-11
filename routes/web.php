@@ -18,6 +18,7 @@ use App\Modules\Dental\Http\Controllers\DentalDiaryEntryController;
 use App\Modules\Dental\Http\Controllers\DentalDocumentController;
 use App\Modules\Dental\Http\Controllers\DentalOdontogramController;
 use App\Modules\Dental\Http\Controllers\DentalTreatmentPlanController;
+use App\Modules\Dental\Http\Controllers\DentalTreatmentPlanItemController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -80,9 +81,11 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('patients/{patient}/dental/treatment-plans', [DentalTreatmentPlanController::class, 'index'])->name('dental.treatment-plans.index');
     Route::post('patients/{patient}/dental/treatment-plans', [DentalTreatmentPlanController::class, 'store'])->name('dental.treatment-plans.store');
     Route::get('patients/{patient}/dental/treatment-plans/{treatmentPlan}', [DentalTreatmentPlanController::class, 'show'])->name('dental.treatment-plans.show');
-    Route::put('patients/{patient}/dental/treatment-plans/{treatmentPlan}', [DentalTreatmentPlanController::class, 'update'])->name('dental.treatment-plans.update');
     Route::delete('patients/{patient}/dental/treatment-plans/{treatmentPlan}', [DentalTreatmentPlanController::class, 'destroy'])->name('dental.treatment-plans.destroy');
     Route::post('patients/{patient}/dental/treatment-plans/{treatmentPlan}/generate-quote', [DentalTreatmentPlanController::class, 'generateQuote'])->name('dental.treatment-plans.generate-quote');
+    Route::post('patients/{patient}/dental/treatment-plans/{treatmentPlan}/items', [DentalTreatmentPlanItemController::class, 'store'])->name('dental.treatment-plans.items.store');
+    Route::put('patients/{patient}/dental/treatment-plans/{treatmentPlan}/items/{item}', [DentalTreatmentPlanItemController::class, 'update'])->name('dental.treatment-plans.items.update');
+    Route::delete('patients/{patient}/dental/treatment-plans/{treatmentPlan}/items/{item}', [DentalTreatmentPlanItemController::class, 'destroy'])->name('dental.treatment-plans.items.destroy');
 
     Route::post('patients/{patient}/consents', [ConsentController::class, 'store'])->name('patients.consents.store');
     Route::patch('patients/{patient}/consents/{consent}/revoke', [ConsentController::class, 'revoke'])->name('patients.consents.revoke');

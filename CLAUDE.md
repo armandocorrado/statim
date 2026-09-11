@@ -489,13 +489,26 @@ completato) → tracciamento accettazione → futuro aggancio a Fatturazione.
 - **Piano di cura NON append-only — a differenza del resto della cartella
   clinica**: diario/documenti/stati dentali sono append-only perché
   registrano eventi accaduti; un piano è un documento di lavoro in bozza,
-  si aggiunge/toglie una voce mentre si valuta il da farsi. La modifica
-  resta comunque tracciata dal diff generico di `Auditable` sul piano
-  stesso. Le voci (`DentalTreatmentPlanItem`) sono **sostituite in
-  blocco** a ogni salvataggio (stesso pattern di `BillingDocumentLine`),
-  non un'API di CRUD per singola voce — così come i loro denti collegati
+  si aggiunge/toglie/modifica una voce mentre si valuta il da farsi. La
+  modifica resta comunque tracciata dal diff generico di `Auditable` sul
+  piano stesso.
+- **Voci del piano — CRUD per singola voce, non sostituzione in
+  blocco — confermato esplicitamente**: a differenza di
+  `BillingDocumentLine`/`QuoteLine` (sempre sostituite tutte insieme a
+  ogni salvataggio del documento padre), `DentalTreatmentPlanItem` ha
+  rotte dedicate per voce (`DentalTreatmentPlanItemController::store()`/
+  `update()`/`destroy()`) — modificare o cancellare una prestazione non
+  tocca le altre voci del piano. Il controllo RBAC fine (categoria
+  Hygiene vs generale) si applica **per singola richiesta**: sulla
+  categoria della voce sottomessa per creazione/modifica
+  (`StoreDentalTreatmentPlanItemRequest`/`UpdateDentalTreatmentPlanItemRequest`,
+  che guardano `$this->input('service_catalog_item_id')` prima ancora
+  della validazione formale), sulla categoria della voce esistente per la
+  cancellazione (`DentalTreatmentPlanItemPolicy::delete()` — non c'è un
+  valore "sottomesso" da controllare al suo posto). I denti collegati
   (`DentalTreatmentPlanItemTooth`, stesso schema di `DentalDocumentTooth`
-  ma mutabile invece di immutabile-dopo-la-creazione).
+  ma mutabile) seguono la stessa voce: sostituiti insieme ad essa
+  (`delete()` + ricrea), mai toccati per le altre voci.
 - **RBAC — un vuoto reale colmato, confermato esplicitamente**:
   l'igienista non aveva **nessun** permesso `treatment_plans.*`. Ora ha
   `treatment_plans.view` (vede il piano per intero) e un nuovo permesso

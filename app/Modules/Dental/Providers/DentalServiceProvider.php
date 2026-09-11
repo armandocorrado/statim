@@ -10,11 +10,13 @@ use App\Modules\Dental\Models\DentalDiaryEntry;
 use App\Modules\Dental\Models\DentalDocument;
 use App\Modules\Dental\Models\DentalToothCondition;
 use App\Modules\Dental\Models\DentalTreatmentPlan;
+use App\Modules\Dental\Models\DentalTreatmentPlanItem;
 use App\Modules\Dental\Policies\DentalAlertPolicy;
 use App\Modules\Dental\Policies\DentalAnamnesisPolicy;
 use App\Modules\Dental\Policies\DentalDiaryEntryPolicy;
 use App\Modules\Dental\Policies\DentalDocumentPolicy;
 use App\Modules\Dental\Policies\DentalToothConditionPolicy;
+use App\Modules\Dental\Policies\DentalTreatmentPlanItemPolicy;
 use App\Modules\Dental\Policies\DentalTreatmentPlanPolicy;
 use App\Modules\Dental\Support\ClinicalAccessChecker;
 use Illuminate\Support\Facades\Gate;
@@ -70,6 +72,7 @@ class DentalServiceProvider extends ServiceProvider
         Gate::policy(DentalDocument::class, DentalDocumentPolicy::class);
         Gate::policy(DentalToothCondition::class, DentalToothConditionPolicy::class);
         Gate::policy(DentalTreatmentPlan::class, DentalTreatmentPlanPolicy::class);
+        Gate::policy(DentalTreatmentPlanItem::class, DentalTreatmentPlanItemPolicy::class);
 
         // Apertura della scheda clinica nel suo insieme — non è legata al
         // ciclo di vita di un singolo model (l'anamnesi potrebbe non

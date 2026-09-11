@@ -14,154 +14,234 @@ const QUOTE_STATUS_LABELS = {
     completed: 'Completato',
 };
 
-const EMPTY_ITEM = { service_catalog_item_id: '', quantity: 1, notes: '', session_group: '', teeth: [] };
+function ToothPicker({ selected, onToggle, permanentTeeth, deciduousTeeth, errors }) {
+    return (
+        <div className="mt-2">
+            <InputLabel value="Denti collegati (facoltativo)" />
+            <div className="mt-1 flex flex-wrap gap-1">
+                {permanentTeeth.map((tooth) => (
+                    <button
+                        key={tooth}
+                        type="button"
+                        onClick={() => onToggle(tooth)}
+                        className={
+                            'rounded border px-1.5 py-0.5 text-xs ' +
+                            (selected.includes(tooth)
+                                ? 'border-indigo-600 bg-indigo-600 text-white'
+                                : 'border-gray-300 bg-white text-slate-600')
+                        }
+                    >
+                        {tooth}
+                    </button>
+                ))}
+            </div>
+            <details className="mt-1">
+                <summary className="cursor-pointer text-xs text-gray-500">Denti decidui</summary>
+                <div className="mt-1 flex flex-wrap gap-1">
+                    {deciduousTeeth.map((tooth) => (
+                        <button
+                            key={tooth}
+                            type="button"
+                            onClick={() => onToggle(tooth)}
+                            className={
+                                'rounded border px-1.5 py-0.5 text-xs ' +
+                                (selected.includes(tooth)
+                                    ? 'border-indigo-600 bg-indigo-600 text-white'
+                                    : 'border-gray-300 bg-white text-slate-600')
+                            }
+                        >
+                            {tooth}
+                        </button>
+                    ))}
+                </div>
+            </details>
+            <InputError message={errors?.['teeth.0']} />
+        </div>
+    );
+}
 
-function ItemsEditor({ patientId, plan, serviceCatalogItems, permanentTeeth, deciduousTeeth }) {
-    const { data, setData, put, processing, errors } = useForm({
-        items: plan.items.map((item) => ({
-            service_catalog_item_id: item.service_catalog_item_id,
-            quantity: item.quantity,
-            notes: item.notes ?? '',
-            session_group: item.session_group ?? '',
-            teeth: item.teeth.map((t) => t.tooth_number),
-        })),
+function ItemRow({ patientId, planId, item, serviceCatalogItems, permanentTeeth, deciduousTeeth }) {
+    const { data, setData, put, delete: destroy, processing, errors } = useForm({
+        service_catalog_item_id: item.service_catalog_item_id,
+        quantity: item.quantity,
+        notes: item.notes ?? '',
+        session_group: item.session_group ?? '',
+        teeth: item.teeth.map((t) => t.tooth_number),
     });
 
-    const updateItem = (index, field, value) => {
-        const items = [...data.items];
-        items[index] = { ...items[index], [field]: value };
-        setData('items', items);
+    const toggleTooth = (tooth) => {
+        setData('teeth', data.teeth.includes(tooth) ? data.teeth.filter((t) => t !== tooth) : [...data.teeth, tooth]);
     };
 
-    const toggleTooth = (index, tooth) => {
-        const current = data.items[index].teeth;
-        updateItem(
-            index,
-            'teeth',
-            current.includes(tooth) ? current.filter((t) => t !== tooth) : [...current, tooth],
-        );
-    };
-
-    const addItem = () => setData('items', [...data.items, { ...EMPTY_ITEM }]);
-    const removeItem = (index) => setData('items', data.items.filter((_, i) => i !== index));
-
-    const submit = (e) => {
+    const save = (e) => {
         e.preventDefault();
-        put(route('dental.treatment-plans.update', [patientId, plan.id]));
+        put(route('dental.treatment-plans.items.update', [patientId, planId, item.id]), { preserveScroll: true });
+    };
+
+    const remove = () => {
+        if (confirm('Eliminare questa voce dal piano di cura?')) {
+            destroy(route('dental.treatment-plans.items.destroy', [patientId, planId, item.id]), { preserveScroll: true });
+        }
     };
 
     return (
-        <form onSubmit={submit} className="space-y-4">
-            {data.items.map((item, index) => (
-                <div key={index} className="rounded-md border border-gray-200 p-3">
-                    <div className="flex flex-wrap items-start gap-3">
-                        <div className="min-w-[12rem] flex-1">
-                            <InputLabel value="Prestazione" />
-                            <select
-                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={item.service_catalog_item_id ?? ''}
-                                onChange={(e) => updateItem(index, 'service_catalog_item_id', e.target.value)}
-                            >
-                                <option value="">— Seleziona —</option>
-                                {serviceCatalogItems.map((catalogItem) => (
-                                    <option key={catalogItem.id} value={catalogItem.id}>
-                                        {catalogItem.name} — {catalogItem.base_price} €
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError message={errors[`items.${index}.service_catalog_item_id`]} />
-                        </div>
-                        <div className="w-20">
-                            <InputLabel value="Qtà" />
-                            <input
-                                type="number"
-                                step="0.01"
-                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={item.quantity}
-                                onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                            />
-                        </div>
-                        <div className="w-40">
-                            <InputLabel value="Seduta (facoltativo)" />
-                            <input
-                                type="text"
-                                placeholder="es. Seduta 1"
-                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={item.session_group}
-                                onChange={(e) => updateItem(index, 'session_group', e.target.value)}
-                            />
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => removeItem(index)}
-                            className="ml-auto text-red-600 hover:underline"
-                        >
-                            ✕
-                        </button>
-                    </div>
-
-                    <div className="mt-2">
-                        <InputLabel value="Denti collegati (facoltativo)" />
-                        <div className="mt-1 flex flex-wrap gap-1">
-                            {permanentTeeth.map((tooth) => (
-                                <button
-                                    key={tooth}
-                                    type="button"
-                                    onClick={() => toggleTooth(index, tooth)}
-                                    className={
-                                        'rounded border px-1.5 py-0.5 text-xs ' +
-                                        (item.teeth.includes(tooth)
-                                            ? 'border-indigo-600 bg-indigo-600 text-white'
-                                            : 'border-gray-300 bg-white text-slate-600')
-                                    }
-                                >
-                                    {tooth}
-                                </button>
-                            ))}
-                        </div>
-                        <details className="mt-1">
-                            <summary className="cursor-pointer text-xs text-gray-500">Denti decidui</summary>
-                            <div className="mt-1 flex flex-wrap gap-1">
-                                {deciduousTeeth.map((tooth) => (
-                                    <button
-                                        key={tooth}
-                                        type="button"
-                                        onClick={() => toggleTooth(index, tooth)}
-                                        className={
-                                            'rounded border px-1.5 py-0.5 text-xs ' +
-                                            (item.teeth.includes(tooth)
-                                                ? 'border-indigo-600 bg-indigo-600 text-white'
-                                                : 'border-gray-300 bg-white text-slate-600')
-                                        }
-                                    >
-                                        {tooth}
-                                    </button>
-                                ))}
-                            </div>
-                        </details>
-                        <InputError message={errors[`items.${index}.teeth.0`]} />
-                    </div>
-
-                    <div className="mt-2">
-                        <InputLabel value="Note cliniche" />
-                        <textarea
-                            rows={2}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            value={item.notes}
-                            onChange={(e) => updateItem(index, 'notes', e.target.value)}
-                        />
-                    </div>
+        <form onSubmit={save} className="rounded-md border border-gray-200 p-3">
+            <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-[12rem] flex-1">
+                    <InputLabel value="Prestazione" />
+                    <select
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value={data.service_catalog_item_id ?? ''}
+                        onChange={(e) => setData('service_catalog_item_id', e.target.value)}
+                    >
+                        <option value="">— Seleziona —</option>
+                        {serviceCatalogItems.map((catalogItem) => (
+                            <option key={catalogItem.id} value={catalogItem.id}>
+                                {catalogItem.name} — {catalogItem.base_price} €
+                            </option>
+                        ))}
+                    </select>
+                    <InputError message={errors.service_catalog_item_id} />
                 </div>
-            ))}
-
-            <div className="flex items-center gap-3">
-                <SecondaryButton type="button" onClick={addItem}>
-                    Aggiungi voce
-                </SecondaryButton>
-                <PrimaryButton type="submit" disabled={processing}>
-                    Salva piano
-                </PrimaryButton>
+                <div className="w-20">
+                    <InputLabel value="Qtà" />
+                    <input
+                        type="number"
+                        step="0.01"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value={data.quantity}
+                        onChange={(e) => setData('quantity', e.target.value)}
+                    />
+                </div>
+                <div className="w-40">
+                    <InputLabel value="Seduta (facoltativo)" />
+                    <input
+                        type="text"
+                        placeholder="es. Seduta 1"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value={data.session_group}
+                        onChange={(e) => setData('session_group', e.target.value)}
+                    />
+                </div>
+                <button
+                    type="button"
+                    onClick={remove}
+                    disabled={processing}
+                    className="ml-auto text-red-600 hover:underline"
+                >
+                    Elimina
+                </button>
             </div>
+
+            <ToothPicker
+                selected={data.teeth}
+                onToggle={toggleTooth}
+                permanentTeeth={permanentTeeth}
+                deciduousTeeth={deciduousTeeth}
+                errors={errors}
+            />
+
+            <div className="mt-2">
+                <InputLabel value="Note cliniche" />
+                <textarea
+                    rows={2}
+                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    value={data.notes}
+                    onChange={(e) => setData('notes', e.target.value)}
+                />
+            </div>
+
+            <SecondaryButton type="submit" className="mt-2" disabled={processing}>
+                Salva modifiche
+            </SecondaryButton>
+        </form>
+    );
+}
+
+function NewItemForm({ patientId, planId, serviceCatalogItems, permanentTeeth, deciduousTeeth }) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        service_catalog_item_id: '',
+        quantity: 1,
+        notes: '',
+        session_group: '',
+        teeth: [],
+    });
+
+    const toggleTooth = (tooth) => {
+        setData('teeth', data.teeth.includes(tooth) ? data.teeth.filter((t) => t !== tooth) : [...data.teeth, tooth]);
+    };
+
+    const submit = (e) => {
+        e.preventDefault();
+        post(route('dental.treatment-plans.items.store', [patientId, planId]), {
+            preserveScroll: true,
+            onSuccess: () => reset(),
+        });
+    };
+
+    return (
+        <form onSubmit={submit} className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-3">
+            <h4 className="mb-2 text-sm font-semibold text-slate-700">Nuova voce</h4>
+            <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-[12rem] flex-1">
+                    <InputLabel value="Prestazione" />
+                    <select
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value={data.service_catalog_item_id}
+                        onChange={(e) => setData('service_catalog_item_id', e.target.value)}
+                    >
+                        <option value="">— Seleziona —</option>
+                        {serviceCatalogItems.map((catalogItem) => (
+                            <option key={catalogItem.id} value={catalogItem.id}>
+                                {catalogItem.name} — {catalogItem.base_price} €
+                            </option>
+                        ))}
+                    </select>
+                    <InputError message={errors.service_catalog_item_id} />
+                </div>
+                <div className="w-20">
+                    <InputLabel value="Qtà" />
+                    <input
+                        type="number"
+                        step="0.01"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value={data.quantity}
+                        onChange={(e) => setData('quantity', e.target.value)}
+                    />
+                </div>
+                <div className="w-40">
+                    <InputLabel value="Seduta (facoltativo)" />
+                    <input
+                        type="text"
+                        placeholder="es. Seduta 1"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        value={data.session_group}
+                        onChange={(e) => setData('session_group', e.target.value)}
+                    />
+                </div>
+            </div>
+
+            <ToothPicker
+                selected={data.teeth}
+                onToggle={toggleTooth}
+                permanentTeeth={permanentTeeth}
+                deciduousTeeth={deciduousTeeth}
+                errors={errors}
+            />
+
+            <div className="mt-2">
+                <InputLabel value="Note cliniche" />
+                <textarea
+                    rows={2}
+                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    value={data.notes}
+                    onChange={(e) => setData('notes', e.target.value)}
+                />
+            </div>
+
+            <PrimaryButton type="submit" className="mt-2" disabled={processing}>
+                Aggiungi voce
+            </PrimaryButton>
         </form>
     );
 }
@@ -209,13 +289,26 @@ export default function Show({
                     <div className="bg-white p-6 shadow-sm sm:rounded-lg">
                         <h3 className="mb-4 text-lg font-medium text-slate-900">Voci del piano</h3>
                         {canManage ? (
-                            <ItemsEditor
-                                patientId={patient.id}
-                                plan={plan}
-                                serviceCatalogItems={visibleCatalog}
-                                permanentTeeth={permanentTeeth}
-                                deciduousTeeth={deciduousTeeth}
-                            />
+                            <div className="space-y-4">
+                                {plan.items.map((item) => (
+                                    <ItemRow
+                                        key={item.id}
+                                        patientId={patient.id}
+                                        planId={plan.id}
+                                        item={item}
+                                        serviceCatalogItems={visibleCatalog}
+                                        permanentTeeth={permanentTeeth}
+                                        deciduousTeeth={deciduousTeeth}
+                                    />
+                                ))}
+                                <NewItemForm
+                                    patientId={patient.id}
+                                    planId={plan.id}
+                                    serviceCatalogItems={visibleCatalog}
+                                    permanentTeeth={permanentTeeth}
+                                    deciduousTeeth={deciduousTeeth}
+                                />
+                            </div>
                         ) : (
                             <ul className="space-y-2 text-sm">
                                 {plan.items.map((item) => (
