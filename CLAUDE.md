@@ -1,8 +1,101 @@
 # MedCare — contesto per Claude Code
 
-Gestionale cloud multi-tenant per professioni sanitarie. Fase attuale:
-**walking skeleton** — tenant → utente con login → anagrafica paziente
-(CRUD), tutto tenant-scoped, con audit log e RBAC.
+Gestionale cloud multi-tenant per professioni sanitarie. Verticale in
+sviluppo: odontoiatria. **Fase 1 (MVP) è quasi completa** — vedi "Stato
+del progetto" subito sotto per il checklist punto per punto, cosa manca,
+i debiti tecnici noti e le questioni aperte. Il resto del file documenta
+il *perché* delle scelte fatte modulo per modulo — questa sezione è
+l'unica pensata per essere riletta all'inizio di ogni nuova sessione.
+
+## Stato del progetto (aggiornato 2026-09-14)
+
+**209/209 test Pest passano** (SQLite in-memory). Ogni modulo è stato
+verificato anche manualmente via HTTP reale contro MySQL locale durante
+lo sviluppo (login → azione → tinker per ispezionare il DB) — pattern
+consolidato in questa sessione, da ripetere per ogni nuovo modulo.
+Nessun deploy reale su Plesk ancora tentato in questa sessione: sviluppo
+e verifica sono stati fatti solo in locale (`php artisan serve` + MySQL
+locale, `npm run build`/`dev`).
+
+### Checklist Fase 1 · MVP odontoiatria (da `MedCare-Roadmap.docx`)
+
+| # | Componente | Stato |
+|---|---|---|
+| 1 | [C] Fondamenta tecniche + astrazione specialità | ✅ Fatto |
+| 2 | [C] Anagrafica paziente | ✅ Fatto |
+| 3 | [C] Consensi e privacy | ✅ Fatto |
+| 4 | [C] Agenda come hub centrale | 🟡 Parziale |
+| 5 | [C] Fatturazione (Sistema TS, SdI) | 🟡 Solo fondamenta |
+| 6 | [V] Cartella clinica + odontogramma | ✅ Fatto |
+| 7 | [V] Preventivi e piani di cura | ✅ Fatto |
+| 8 | [C] WhatsApp anti no-show + layout per ruolo | ❌ Non iniziato |
+
+**Punto 4 — cosa manca esattamente**: lo scheduling multi-operatore/
+multi-poltrona con anti-sovrapposizione è completo (vedi sezione
+"Agenda"), ma l'idea di "hub centrale" della roadmap — *un clic
+sull'appuntamento apre cartella, piano di cura, contabilità e storico
+senza cambiare schermata* — non è costruita. Oggi cartella clinica,
+piano di cura, preventivi e fatturazione sono pagine separate raggiunte
+da navigazione normale, non un pannello unificato agganciato
+all'appuntamento. Prossimo pezzo naturale per chiudere la Fase 1.
+
+**Punto 5 — cosa manca esattamente**: solo le fondamenta interne
+(stati Draft/Issued, numerazione annuale, calcolo totali/IVA) dietro tre
+gateway mock (`ElectronicInvoiceGateway`/`HealthExpenseReportingGateway`/
+`DigitalPreservationGateway`). Le integrazioni reali richiedono
+certificati/credenziali SdI, un ambiente di test Sistema TS e un
+conservatore accreditato — **nessuno di questi è ancora disponibile**,
+è un blocco esterno al codice, non tecnico. Vedi sezione "Fatturazione".
+
+**Punto 8 — non iniziato**: nessuna integrazione WhatsApp, nessun
+layout adattivo per ruolo, nessuna "scheda paziente unificata a
+pannelli". Nessuna progettazione fatta finora — da affrontare da zero
+quando si riprende, probabilmente in coppia col punto 4 (entrambi
+toccano la UX della scheda paziente/agenda).
+
+### Debiti tecnici noti (rimandati deliberatamente, con motivazione già registrata)
+
+Ogni voce ha il dettaglio completo nella sezione di modulo linkata — qui
+solo l'indice per orientarsi velocemente:
+
+- **Fatturazione**: nota di credito, tracciamento incassi/pagamenti,
+  intestatario azienda (non-`Patient`) — sezione "Fatturazione".
+- **Preventivi**: `BillingDocument.source_quote_id` (aggancio
+  accettato→fatturato, sarà una FK reale Core↔Core quando arriva), invio
+  preventivo via email/portale, pagamenti dilazionati, sconto a importo
+  fisso come alternativa alla percentuale — sezione "Preventivi e piani
+  di cura".
+- **Agenda**: squadra clinica (filtro visibilità per team, oggi
+  `aso`/`igienista` vedono l'intero studio come stato interinale), KPI e
+  spettanze per operatore, prenotazione online, promemoria automatici —
+  sezione "Agenda" e "Vincoli architetturali futuri" sotto RBAC.
+  Anche il "prima visita" derivato dall'Agenda (deliberatamente non un
+  campo su `Patient`) dipende dal completamento del punto 4.
+- **Cartella clinica/odontogramma**: integrazione scanner/sistemi
+  radiologici, FSE, cifratura byte-a-byte dei file, collegamento
+  retroattivo di denti a un documento già caricato (si scelgono solo
+  all'upload) — sezioni "Cartella clinica" e "Odontogramma interattivo".
+- **Anagrafica**: UI di selezione tutore/referente (backend pronto, serve
+  un componente di ricerca pazienti riusabile — esiste già `PatientPicker`
+  per Billing, andrebbe solo riusato), intestatario azienda.
+- **RBAC**: super-admin di piattaforma (rinviato — quando servirà, guard/
+  model separato da `App\Models\User`, mai un ruolo tenant-scoped).
+
+### Questioni aperte che servono una decisione (non solo codice)
+
+- **Aliquote/esenzioni IVA e regola SdI-vs-Sistema TS**
+  (`FiscalChannelResolver`) sono provvisorie — **da validare con un
+  commercialista** prima di qualunque uso reale, non solo prima del
+  deploy. In particolare non è chiaro se un'eventuale opposizione del
+  paziente all'invio al Sistema TS cambi comunque il divieto SdI.
+- **Deploy Plesk**: mai tentato in questa sessione. Da verificare prima
+  del primo rilascio: versione PHP effettiva su Plesk (8.3, non 8.4 come
+  in locale), configurazione `.env` di produzione, migrazione del DB
+  MySQL locale → Plesk, build asset (`npm run build` committato o
+  buildato in pipeline?).
+- **Da dove ripartire**: punto 4 (hub Agenda) o punto 8 (WhatsApp +
+  layout per ruolo) sono gli unici due pezzi mancanti di Fase 1 — nessuna
+  decisione ancora presa su quale affrontare per primo.
 
 ## Stack
 
