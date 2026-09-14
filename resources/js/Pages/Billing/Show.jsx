@@ -17,6 +17,11 @@ function Field({ label, value }) {
     );
 }
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 export default function Show({ document }) {
     const { delete: destroy, patch, processing } = useForm();
     const isDraft = document.status === 'draft';
@@ -71,7 +76,7 @@ export default function Show({ document }) {
                             />
                             <Field
                                 label="Data emissione"
-                                value={document.issued_at}
+                                value={formatDate(document.issued_at)}
                             />
                             <Field
                                 label="Paziente"

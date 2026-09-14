@@ -19,6 +19,11 @@ const STATUS_LABELS = {
     completed: 'Completato',
 };
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 export default function Index({ quotes, acceptanceRate }) {
     const canManageCatalog = usePage().props.auth.permissions.includes('treatment_plans.administer');
 
@@ -83,7 +88,7 @@ export default function Index({ quotes, acceptanceRate }) {
                                                 {STATUS_LABELS[quote.status]}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3">{quote.issued_at ?? '—'}</td>
+                                        <td className="px-6 py-3">{formatDate(quote.issued_at) ?? '—'}</td>
                                         <td className="px-6 py-3">
                                             {quote.total_amount ? `${quote.total_amount} €` : '—'}
                                         </td>

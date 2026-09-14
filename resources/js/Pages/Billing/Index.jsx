@@ -12,6 +12,11 @@ const STATUS_LABELS = {
     issued: 'Emesso',
 };
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 export default function Index({ documents }) {
     return (
         <AuthenticatedLayout
@@ -62,7 +67,7 @@ export default function Index({ documents }) {
                                             </Link>
                                         </td>
                                         <td className="px-6 py-3">
-                                            {document.issued_at ?? '—'}
+                                            {formatDate(document.issued_at) ?? '—'}
                                         </td>
                                         <td className="px-6 py-3">
                                             {document.patient.first_name}{' '}

@@ -11,6 +11,11 @@ const SECTION_LABELS = { general: 'Generale', hygiene: 'Igiene' };
 // blindatura resta la rotta /preview stessa.
 const PREVIEWABLE_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 function AlertsBanner({ alerts, patientId, canManage }) {
     if (alerts.length === 0) return null;
 
@@ -228,7 +233,7 @@ function DiarySection({ patientId, entries, canManage, hasFullAccess }) {
                 {entries.map((entry) => (
                     <li key={entry.id} className="border-b border-gray-100 pb-3">
                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{entry.entry_date}</span>
+                            <span>{formatDate(entry.entry_date)}</span>
                             <span>—</span>
                             <span>{entry.operator.name}</span>
                             <span className="rounded-full bg-gray-100 px-2 py-0.5">

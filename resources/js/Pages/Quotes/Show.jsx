@@ -12,6 +12,11 @@ const STATUS_LABELS = {
     completed: 'Completato',
 };
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 function Field({ label, value }) {
     return (
         <div>
@@ -59,8 +64,8 @@ export default function Show({ quote, canManage, canIssue, canDelete, canTransit
                     <div className="bg-white p-6 shadow-sm sm:rounded-lg">
                         <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <Field label="Stato" value={STATUS_LABELS[quote.status]} />
-                            <Field label="Data emissione" value={quote.issued_at} />
-                            <Field label="Data accettazione/rifiuto" value={quote.responded_at} />
+                            <Field label="Data emissione" value={formatDate(quote.issued_at)} />
+                            <Field label="Data accettazione/rifiuto" value={formatDate(quote.responded_at)} />
                             <Field
                                 label="Paziente"
                                 value={

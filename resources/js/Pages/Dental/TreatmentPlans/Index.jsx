@@ -3,6 +3,11 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 function NewPlanForm({ patientId }) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
@@ -66,7 +71,7 @@ export default function Index({ patient, plans, canCreate }) {
                                         {plan.title || 'Piano senza titolo'}
                                     </Link>
                                     <span className="text-xs text-gray-500">
-                                        {plan.items_count} {plan.items_count === 1 ? 'voce' : 'voci'} — {plan.created_at.slice(0, 10)}
+                                        {plan.items_count} {plan.items_count === 1 ? 'voce' : 'voci'} — {formatDate(plan.created_at)}
                                     </span>
                                 </li>
                             ))}

@@ -14,6 +14,11 @@ const QUOTE_STATUS_LABELS = {
     completed: 'Completato',
 };
 
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
 function ToothPicker({ selected, onToggle, permanentTeeth, deciduousTeeth, errors }) {
     return (
         <div className="mt-2">
@@ -341,7 +346,7 @@ export default function Show({
                             {quotes.map((quote) => (
                                 <li key={quote.id} className="flex items-center justify-between border-b border-gray-100 pb-2">
                                     <Link href={route('quotes.show', quote.id)} className="text-indigo-600 hover:underline">
-                                        Preventivo del {quote.created_at.slice(0, 10)}
+                                        Preventivo del {formatDate(quote.created_at)}
                                     </Link>
                                     <span className="text-xs text-gray-500">
                                         {QUOTE_STATUS_LABELS[quote.status]}
