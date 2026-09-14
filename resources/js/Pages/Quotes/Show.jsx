@@ -21,7 +21,7 @@ function Field({ label, value }) {
     );
 }
 
-export default function Show({ quote, canManage, canTransition, allowedNextStatuses }) {
+export default function Show({ quote, canManage, canIssue, canDelete, canTransition, allowedNextStatuses }) {
     const { delete: destroy, patch, processing } = useForm();
     const isDraft = quote.status === 'draft';
 
@@ -144,24 +144,26 @@ export default function Show({ quote, canManage, canTransition, allowedNextStatu
                             </Link>
 
                             {canManage && isDraft && (
-                                <>
-                                    <Link
-                                        href={route('quotes.edit', quote.id)}
-                                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                                    >
-                                        Modifica
-                                    </Link>
-                                    <PrimaryButton type="button" disabled={processing} onClick={confirmIssue}>
-                                        Emetti
-                                    </PrimaryButton>
-                                    <button
-                                        onClick={confirmDelete}
-                                        disabled={processing}
-                                        className="ml-auto text-sm text-red-600 hover:underline"
-                                    >
-                                        Elimina bozza
-                                    </button>
-                                </>
+                                <Link
+                                    href={route('quotes.edit', quote.id)}
+                                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                >
+                                    Modifica prezzi
+                                </Link>
+                            )}
+                            {canIssue && isDraft && (
+                                <PrimaryButton type="button" disabled={processing} onClick={confirmIssue}>
+                                    Emetti
+                                </PrimaryButton>
+                            )}
+                            {canDelete && isDraft && (
+                                <button
+                                    onClick={confirmDelete}
+                                    disabled={processing}
+                                    className="ml-auto text-sm text-red-600 hover:underline"
+                                >
+                                    Elimina bozza
+                                </button>
                             )}
 
                             {canTransition &&

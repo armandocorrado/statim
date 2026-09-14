@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Quotes\Policies\QuotePolicy;
 use App\Core\Users\Support\TenantRoleProvisioner;
 
 test('the dental vertical grafts its clinical roles onto the core catalog', function () {
@@ -48,4 +49,14 @@ test('only admin can manage other users', function () {
         expect($userManagementPermissions)
             ->toBe([], "Il ruolo '{$role}' non deve mai poter gestire altri utenti, trovati: ".implode(', ', $userManagementPermissions));
     }
+});
+
+test('the quote price-edit permission is never granted to any role by default', function () {
+    // treatment_plans.prices.edit è concedibile SOLO direttamente a un
+    // singolo utente dall'admin (UserController::updateQuotePricePermission) —
+    // se comparisse qui in un ruolo, ogni utente di quel ruolo lo
+    // erediterebbe automaticamente, vanificando il controllo per-utente.
+    $allRolePermissions = array_merge(...array_values(TenantRoleProvisioner::defaultRolePermissions()));
+
+    expect($allRolePermissions)->not->toContain(QuotePolicy::PRICES_EDIT_PERMISSION);
 });

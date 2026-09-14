@@ -50,10 +50,18 @@ class QuoteController extends Controller
     {
         $this->authorize('view', $quote);
 
+        $user = request()->user();
+
         return Inertia::render('Quotes/Show', [
             'quote' => $quote->load(['patient:id,first_name,last_name', 'lines', 'creator:id,name']),
-            'canManage' => request()->user()->can('update', $quote),
-            'canTransition' => request()->user()->can('transition', $quote),
+            // Tre flag distinti, mai sovrapposti: canManage (modifica
+            // prezzi) può valere per un dentista abilitato senza che
+            // questo implichi canIssue/canDelete, riservati a
+            // treatment_plans.administer — vedi QuotePolicy.
+            'canManage' => $user->can('update', $quote),
+            'canIssue' => $user->can('issue', $quote),
+            'canDelete' => $user->can('delete', $quote),
+            'canTransition' => $user->can('transition', $quote),
             'allowedNextStatuses' => QuoteTransitions::allowedNextValues($quote->status),
         ]);
     }

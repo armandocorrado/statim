@@ -96,6 +96,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::patch('users/{user}/role', [UserController::class, 'updateRole'])->name('users.role.update');
     Route::patch('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     Route::patch('users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
+    Route::patch('users/{user}/quote-price-permission', [UserController::class, 'updateQuotePricePermission'])->name('users.quote-price-permission.update');
 });
 
 Route::middleware('guest')->group(function () {

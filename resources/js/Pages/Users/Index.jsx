@@ -42,6 +42,17 @@ export default function Index({ users, invitations, roles }) {
         router.patch(route(routeName, user.id), {}, { preserveScroll: true });
     };
 
+    const canEditQuotePrices = (user) =>
+        user.permissions.some((p) => p.name === 'treatment_plans.prices.edit');
+
+    const toggleQuotePricePermission = (user) => {
+        router.patch(
+            route('users.quote-price-permission.update', user.id),
+            { enabled: !canEditQuotePrices(user) },
+            { preserveScroll: true },
+        );
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -179,6 +190,7 @@ export default function Index({ users, invitations, roles }) {
                                     <th className="px-6 py-3">Email</th>
                                     <th className="px-6 py-3">Ruolo</th>
                                     <th className="px-6 py-3">Stato</th>
+                                    <th className="px-6 py-3">Modifica prezzi preventivi</th>
                                     <th className="px-6 py-3" />
                                 </tr>
                             </thead>
@@ -226,6 +238,22 @@ export default function Index({ users, invitations, roles }) {
                                                 <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
                                                     Disattivato
                                                 </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-3">
+                                            {['odontoiatra', 'igienista'].includes(user.roles[0]?.name) ? (
+                                                <label className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={canEditQuotePrices(user)}
+                                                        onChange={() => toggleQuotePricePermission(user)}
+                                                    />
+                                                    <span className="text-xs text-gray-500">
+                                                        {canEditQuotePrices(user) ? 'Abilitata' : 'Non abilitata'}
+                                                    </span>
+                                                </label>
+                                            ) : (
+                                                <span className="text-xs text-gray-300">—</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-3 text-right">

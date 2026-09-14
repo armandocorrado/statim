@@ -556,6 +556,58 @@ completato) → tracciamento accettazione → futuro aggancio a Fatturazione.
   di piano già salvata (i denti si scelgono solo alla creazione/modifica
   della voce), sconto a importo fisso come alternativa alla percentuale.
 
+### Modifica prezzi per singolo dentista (`treatment_plans.prices.edit`)
+
+Tre livelli distinti sulla stessa risorsa (`Quote`), non annidati l'uno
+nell'altro — vedi `QuotePolicy`:
+
+1. **Visualizzazione** (prezzi inclusi) — `treatment_plans.view`,
+   per-ruolo com'era già (admin/segreteria/odontoiatra/igienista).
+2. **Modifica prezzi in bozza** — `treatment_plans.administer` **oppure**
+   `treatment_plans.prices.edit`, quest'ultimo concesso **direttamente al
+   singolo utente** dall'admin studio, mai a un ruolo. Di default nessun
+   dentista ce l'ha.
+3. **Emissione/gestione** (transizioni di stato) — **solo**
+   `treatment_plans.administer`, mai `treatment_plans.prices.edit`.
+
+- **Permesso diretto-all'utente, non per-ruolo — stesso meccanismo di
+  spatie/laravel-permission già usato per i ruoli**: `model_has_permissions`
+  ha la stessa colonna team-scoped (`tenant_id`) di `model_has_roles` (vedi
+  la migration pubblicata) — `$user->givePermissionTo(...)` funziona già
+  scoped per tenant, **nessuna migration nuova** è servita per questa
+  funzionalità. `QuotePolicy::PRICES_EDIT_PERMISSION` è l'unica fonte di
+  verità per il nome del permesso.
+- **Punto critico corretto durante l'implementazione**: `QuotePolicy::issue()`/
+  `::delete()` **prima** delegavano a `update()` (`return $this->update(...)`)
+  — allargare `update()` con l'OR sul nuovo permesso avrebbe fatto
+  ereditare automaticamente anche emissione/cancellazione a un dentista
+  abilitato solo ai prezzi. Ora sono tre metodi indipendenti, nessuna
+  delega fra loro.
+- **Caveat spatie trovato in test**: i metodi "diretti" (`hasDirectPermission()`,
+  `hasPermissionTo()` chiamati fuori dal Gate) **lanciano**
+  `PermissionDoesNotExist` se la riga `Permission` non esiste ancora —
+  non ritornano `false`. Capita al primissimo utilizzo in assoluto (nessun
+  ruolo registra mai questo permesso, quindi `TenantRoleProvisioner` non
+  lo crea). `UserController::updateQuotePricePermission()` chiama
+  `Permission::findOrCreate()` **prima** di qualunque controllo, per
+  questo. Il Gate (`$user->can(...)`, usato da `QuotePolicy`) invece è
+  già sicuro di suo — ritorna `false`/nega senza eccezioni anche se il
+  permesso non esiste — verificato empiricamente, nessuna modifica
+  necessaria lì.
+- **Chi assegna**: solo admin (`UserPolicy::update()`, già `users.update`,
+  già solo admin — nessuna Policy nuova). UI: colonna/toggle nella pagina
+  Utenti già esistente (`/users`), non una pagina dedicata. Concedibile
+  solo a odontoiatra/igienista (`UpdateUserQuotePricePermissionRequest`
+  rifiuta segreteria/ASO/admin come target — ridondante o pericoloso).
+- **Audit**: `quote_price_permission_granted`/`_revoked` su
+  `AuditRecorder::record($user, ...)`, stesso identico pattern di
+  `role_changed` già in uso per il cambio ruolo.
+- **Governance**: `RoleGovernanceTest` verifica che
+  `treatment_plans.prices.edit` non compaia **mai** nel catalogo
+  permessi di nessun ruolo di default — se comparisse lì, ogni utente di
+  quel ruolo lo erediterebbe automaticamente, vanificando il controllo
+  per-utente.
+
 ## Cartella clinica (`App\Modules\Dental`) — primo contenuto reale del verticale
 
 **Non è core**: vive in `App\Modules\Dental`, il core non la importa mai.

@@ -3,7 +3,9 @@
 namespace App\Core\Users\Http\Controllers;
 
 use App\Core\Audit\Support\AuditRecorder;
+use App\Core\Quotes\Policies\QuotePolicy;
 use App\Core\Users\Http\Requests\InviteUserRequest;
+use App\Core\Users\Http\Requests\UpdateUserQuotePricePermissionRequest;
 use App\Core\Users\Http\Requests\UpdateUserRoleRequest;
 use App\Core\Users\Models\Invitation;
 use App\Core\Users\Notifications\UserInvited;
@@ -15,6 +17,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -25,7 +28,7 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         $users = User::query()
-            ->with('roles')
+            ->with(['roles', 'permissions'])
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString();
@@ -111,5 +114,49 @@ class UserController extends Controller
         $user->save();
 
         return to_route('users.index')->with('success', 'Utente riattivato.');
+    }
+
+    /**
+     * Concede/revoca treatment_plans.prices.edit DIRETTAMENTE all'utente
+     * — mai a un ruolo. Stesso meccanismo team-scoped di
+     * spatie/laravel-permission già usato per i ruoli (model_has_permissions
+     * ha la stessa colonna tenant_id di model_has_roles), stesso pattern
+     * di audit di updateRole().
+     */
+    public function updateQuotePricePermission(UpdateUserQuotePricePermissionRequest $request, User $user): RedirectResponse
+    {
+        $permission = QuotePolicy::PRICES_EDIT_PERMISSION;
+
+        // Deve esistere PRIMA di qualunque controllo: hasDirectPermission()
+        // lancia PermissionDoesNotExist (non ritorna false) se la riga non
+        // c'è ancora — capita al primo utilizzo in assoluto, dato che
+        // nessun ruolo la registra mai (vedi RoleGovernanceTest).
+        Permission::findOrCreate($permission, 'web');
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId($user->tenant_id);
+
+        $wasEnabled = $user->hasDirectPermission($permission);
+        $enabled = $request->boolean('enabled');
+
+        if ($enabled === $wasEnabled) {
+            return to_route('users.index');
+        }
+
+        if ($enabled) {
+            $user->givePermissionTo($permission);
+        } else {
+            $user->revokePermissionTo($permission);
+        }
+
+        AuditRecorder::record(
+            $user,
+            $enabled ? 'quote_price_permission_granted' : 'quote_price_permission_revoked',
+            [$permission => $wasEnabled],
+            [$permission => $enabled],
+        );
+
+        return to_route('users.index')->with('success', $enabled
+            ? 'Modifica prezzi preventivi abilitata.'
+            : 'Modifica prezzi preventivi disabilitata.');
     }
 }
