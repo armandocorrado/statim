@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 
@@ -56,17 +57,17 @@ export default function Index({ users, invitations, roles }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Utenti
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Utenti" />
 
             <div className="space-y-6 py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg">
-                        <h3 className="mb-4 text-lg font-medium text-slate-900">
+                    <div className="overflow-hidden bg-white p-8 shadow-soft sm:rounded-card">
+                        <h3 className="mb-4 text-lg font-medium text-ink">
                             Invita un nuovo utente
                         </h3>
 
@@ -95,7 +96,7 @@ export default function Index({ users, invitations, roles }) {
                                 <InputLabel htmlFor="role" value="Ruolo" />
                                 <select
                                     id="role"
-                                    className="block w-48 rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-700 focus:ring-blue-700"
+                                    className="block w-48 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                     value={data.role}
                                     onChange={(e) =>
                                         setData('role', e.target.value)
@@ -125,12 +126,12 @@ export default function Index({ users, invitations, roles }) {
 
                 {invitations.length > 0 && (
                     <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                        <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                            <h3 className="p-6 pb-0 text-lg font-medium text-slate-900">
+                        <div className="overflow-hidden bg-white shadow-soft sm:rounded-card">
+                            <h3 className="p-6 pb-0 text-lg font-medium text-ink">
                                 Inviti in attesa
                             </h3>
                             <table className="w-full text-left text-sm">
-                                <thead className="border-y border-gray-200 bg-gray-50 text-gray-600">
+                                <thead className="border-y border-cream-dark bg-cream text-ink-secondary">
                                     <tr>
                                         <th className="px-6 py-3">Email</th>
                                         <th className="px-6 py-3">Ruolo</th>
@@ -182,9 +183,9 @@ export default function Index({ users, invitations, roles }) {
                 )}
 
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div className="overflow-hidden bg-white shadow-soft sm:rounded-card">
                         <table className="w-full text-left text-sm">
-                            <thead className="border-y border-gray-200 bg-gray-50 text-gray-600">
+                            <thead className="border-y border-cream-dark bg-cream text-ink-secondary">
                                 <tr>
                                     <th className="px-6 py-3">Nome</th>
                                     <th className="px-6 py-3">Email</th>
@@ -198,7 +199,7 @@ export default function Index({ users, invitations, roles }) {
                                 {users.data.map((user) => (
                                     <tr
                                         key={user.id}
-                                        className="border-b border-gray-100 hover:bg-gray-50"
+                                        className="border-b border-gray-100 hover:bg-cream"
                                     >
                                         <td className="px-6 py-3">
                                             {user.name}
@@ -208,7 +209,7 @@ export default function Index({ users, invitations, roles }) {
                                         </td>
                                         <td className="px-6 py-3">
                                             <select
-                                                className="rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-700 focus:ring-blue-700"
+                                                className="rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                                 defaultValue={
                                                     user.roles[0]?.name ?? ''
                                                 }
@@ -282,7 +283,7 @@ export default function Index({ users, invitations, roles }) {
                                         href={link.url ?? '#'}
                                         className={`rounded px-3 py-1 text-sm ${
                                             link.active
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-brand text-white'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
                                         dangerouslySetInnerHTML={{

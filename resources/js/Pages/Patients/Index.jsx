@@ -1,5 +1,6 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 
@@ -16,16 +17,16 @@ export default function Index({ patients, filters }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Pazienti
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Pazienti" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div className="overflow-hidden bg-white shadow-soft sm:rounded-card">
                         <div className="flex items-center justify-between gap-4 p-6">
                             <form
                                 onSubmit={submitSearch}
@@ -44,14 +45,14 @@ export default function Index({ patients, filters }) {
 
                             <Link
                                 href={route('patients.create')}
-                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
                             >
                                 Nuovo paziente
                             </Link>
                         </div>
 
                         <table className="w-full text-left text-sm">
-                            <thead className="border-y border-gray-200 bg-gray-50 text-gray-600">
+                            <thead className="border-y border-cream-dark bg-cream text-ink-secondary">
                                 <tr>
                                     <th className="px-6 py-3">Cognome</th>
                                     <th className="px-6 py-3">Nome</th>
@@ -65,7 +66,7 @@ export default function Index({ patients, filters }) {
                                 {patients.data.map((patient) => (
                                     <tr
                                         key={patient.id}
-                                        className="border-b border-gray-100 hover:bg-gray-50"
+                                        className="border-b border-gray-100 hover:bg-cream"
                                     >
                                         <td className="px-6 py-3">
                                             <Link
@@ -73,7 +74,7 @@ export default function Index({ patients, filters }) {
                                                     'patients.show',
                                                     patient.id,
                                                 )}
-                                                className="text-indigo-600 hover:underline"
+                                                className="text-brand hover:underline"
                                             >
                                                 {patient.last_name}
                                             </Link>
@@ -120,7 +121,7 @@ export default function Index({ patients, filters }) {
                                         preserveScroll
                                         className={`rounded px-3 py-1 text-sm ${
                                             link.active
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-brand text-white'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
                                         dangerouslySetInnerHTML={{

@@ -1,5 +1,6 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 
@@ -51,11 +52,11 @@ export default function Show({ document }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     {document.document_number
                         ? `Fattura ${document.document_number}/${document.document_year}`
                         : 'Bozza fattura'}
-                </h2>
+                </PageHeading>
             }
         >
             <Head
@@ -66,9 +67,9 @@ export default function Show({ document }) {
                 }
             />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <Field
                                 label="Stato"
@@ -86,7 +87,7 @@ export default function Show({ document }) {
                                             'patients.show',
                                             document.patient.id,
                                         )}
-                                        className="text-indigo-600 hover:underline"
+                                        className="text-brand hover:underline"
                                     >
                                         {document.patient.first_name}{' '}
                                         {document.patient.last_name}
@@ -211,7 +212,7 @@ export default function Show({ document }) {
                                             'billing.edit',
                                             document.id,
                                         )}
-                                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                        className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
                                     >
                                         Modifica
                                     </Link>

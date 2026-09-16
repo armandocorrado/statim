@@ -1,4 +1,5 @@
 import PrimaryButton from '@/Components/PrimaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 
@@ -21,14 +22,14 @@ export default function Index({ documents }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Fatturazione
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Fatturazione" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
                     <div className="mb-4 flex justify-end">
                         <Link href={route('billing.create')}>
@@ -36,9 +37,9 @@ export default function Index({ documents }) {
                         </Link>
                     </div>
 
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div className="overflow-hidden bg-white shadow-soft sm:rounded-card">
                         <table className="w-full text-left text-sm">
-                            <thead className="border-y border-gray-200 bg-gray-50 text-gray-600">
+                            <thead className="border-y border-cream-dark bg-cream text-ink-secondary">
                                 <tr>
                                     <th className="px-6 py-3">Numero</th>
                                     <th className="px-6 py-3">Data</th>
@@ -51,7 +52,7 @@ export default function Index({ documents }) {
                                 {documents.data.map((document) => (
                                     <tr
                                         key={document.id}
-                                        className="border-b border-gray-100 hover:bg-gray-50"
+                                        className="border-b border-gray-100 hover:bg-cream"
                                     >
                                         <td className="px-6 py-3">
                                             <Link
@@ -59,7 +60,7 @@ export default function Index({ documents }) {
                                                     'billing.show',
                                                     document.id,
                                                 )}
-                                                className="text-indigo-600 hover:underline"
+                                                className="text-brand hover:underline"
                                             >
                                                 {document.document_number
                                                     ? `${document.document_number}/${document.document_year}`
@@ -98,7 +99,7 @@ export default function Index({ documents }) {
                                         href={link.url ?? '#'}
                                         className={`rounded px-3 py-1 text-sm ${
                                             link.active
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-brand text-white'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
                                         dangerouslySetInnerHTML={{

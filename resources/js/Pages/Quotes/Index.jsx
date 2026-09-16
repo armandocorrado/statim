@@ -1,3 +1,4 @@
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
 
@@ -30,41 +31,41 @@ export default function Index({ quotes, acceptanceRate }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Preventivi
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Preventivi" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
                     <div className="flex justify-end">
-                        <Link href={route('service-catalog.index')} className="text-sm text-indigo-600 hover:underline">
+                        <Link href={route('service-catalog.index')} className="text-sm text-brand hover:underline">
                             {canManageCatalog ? 'Gestisci listino prestazioni' : 'Vedi listino prestazioni'}
                         </Link>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div className="bg-white p-4 shadow-sm sm:rounded-lg">
+                        <div className="bg-white p-6 shadow-soft sm:rounded-card">
                             <dt className="text-xs uppercase tracking-wide text-gray-500">Preventivi emessi</dt>
-                            <dd className="mt-1 text-2xl font-semibold text-slate-900">{acceptanceRate.issued}</dd>
+                            <dd className="mt-1 text-2xl font-semibold text-ink">{acceptanceRate.issued}</dd>
                         </div>
-                        <div className="bg-white p-4 shadow-sm sm:rounded-lg">
+                        <div className="bg-white p-6 shadow-soft sm:rounded-card">
                             <dt className="text-xs uppercase tracking-wide text-gray-500">Accettati</dt>
-                            <dd className="mt-1 text-2xl font-semibold text-slate-900">{acceptanceRate.accepted}</dd>
+                            <dd className="mt-1 text-2xl font-semibold text-ink">{acceptanceRate.accepted}</dd>
                         </div>
-                        <div className="bg-white p-4 shadow-sm sm:rounded-lg">
+                        <div className="bg-white p-6 shadow-soft sm:rounded-card">
                             <dt className="text-xs uppercase tracking-wide text-gray-500">Tasso di accettazione</dt>
-                            <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                            <dd className="mt-1 text-2xl font-semibold text-ink">
                                 {acceptanceRate.rate !== null ? `${acceptanceRate.rate}%` : '—'}
                             </dd>
                         </div>
                     </div>
 
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div className="overflow-hidden bg-white shadow-soft sm:rounded-card">
                         <table className="w-full text-left text-sm">
-                            <thead className="border-y border-gray-200 bg-gray-50 text-gray-600">
+                            <thead className="border-y border-cream-dark bg-cream text-ink-secondary">
                                 <tr>
                                     <th className="px-6 py-3">Paziente</th>
                                     <th className="px-6 py-3">Stato</th>
@@ -74,11 +75,11 @@ export default function Index({ quotes, acceptanceRate }) {
                             </thead>
                             <tbody>
                                 {quotes.data.map((quote) => (
-                                    <tr key={quote.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                    <tr key={quote.id} className="border-b border-gray-100 hover:bg-cream">
                                         <td className="px-6 py-3">
                                             <Link
                                                 href={route('quotes.show', quote.id)}
-                                                className="text-indigo-600 hover:underline"
+                                                className="text-brand hover:underline"
                                             >
                                                 {quote.patient.first_name} {quote.patient.last_name}
                                             </Link>
@@ -105,7 +106,7 @@ export default function Index({ quotes, acceptanceRate }) {
                                         href={link.url ?? '#'}
                                         className={`rounded px-3 py-1 text-sm ${
                                             link.active
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-brand text-white'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}

@@ -1,6 +1,7 @@
 import AppointmentModal from '@/Components/AppointmentModal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
@@ -28,7 +29,7 @@ const ROLE_PROFILES = {
     odontoiatra: { label: 'Odontoiatra', border: 'border-t-blue-600', badge: 'bg-blue-100 text-blue-700' },
     igienista: { label: 'Igienista', border: 'border-t-teal-600', badge: 'bg-teal-100 text-teal-700' },
     aso: { label: 'Assistente alla poltrona', border: 'border-t-amber-600', badge: 'bg-amber-100 text-amber-700' },
-    admin: { label: 'Titolare', border: 'border-t-slate-600', badge: 'bg-slate-100 text-slate-700' },
+    admin: { label: 'Titolare', border: 'border-t-slate-600', badge: 'bg-slate-100 text-ink-secondary' },
     segreteria: { label: 'Segreteria', border: 'border-t-purple-600', badge: 'bg-purple-100 text-purple-700' },
 };
 
@@ -59,7 +60,7 @@ function AppointmentCard({ appointment, columnOperatorId, onEdit }) {
             style={{ borderLeftColor: appointment.type?.color ?? '#94a3b8' }}
         >
             <div className="flex items-center justify-between">
-                <span className="font-medium text-slate-900">
+                <span className="font-medium text-ink">
                     {formatTime(appointment.start_at)}–
                     {formatTime(appointment.end_at)}
                 </span>
@@ -69,7 +70,7 @@ function AppointmentCard({ appointment, columnOperatorId, onEdit }) {
                     {STATUS_LABELS[appointment.status]}
                 </span>
             </div>
-            <div className="mt-1 text-slate-700">
+            <div className="mt-1 text-ink-secondary">
                 {appointment.patient
                     ? `${appointment.patient.first_name} ${appointment.patient.last_name}`
                     : 'Bloccato / non disponibile'}
@@ -158,14 +159,14 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Agenda
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Agenda" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
@@ -184,7 +185,7 @@ export default function Index({
                             <SecondaryButton onClick={() => shiftDate(view === 'week' ? 7 : 1)}>
                                 ›
                             </SecondaryButton>
-                            <span className="ml-2 text-sm font-medium text-slate-700">
+                            <span className="ml-2 text-sm font-medium text-ink-secondary">
                                 {new Date(date).toLocaleDateString('it-IT', {
                                     weekday: 'long',
                                     day: 'numeric',
@@ -196,7 +197,7 @@ export default function Index({
 
                         <div className="flex items-center gap-2">
                             <select
-                                className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                 value={operatorId ?? ''}
                                 onChange={(e) =>
                                     navigate({ operator_id: e.target.value || null })
@@ -243,7 +244,7 @@ export default function Index({
                                     key={operator.id}
                                     className={`rounded-lg border-t-4 bg-gray-50 p-3 ${profile.border}`}
                                 >
-                                    <h3 className="text-sm font-semibold text-slate-800">
+                                    <h3 className="text-sm font-semibold text-ink">
                                         {operator.name}
                                     </h3>
                                     <span
@@ -274,7 +275,7 @@ export default function Index({
                         <>
                             {weekOperator && (
                                 <div className="mb-3 flex items-center gap-2">
-                                    <span className="text-sm font-medium text-slate-800">
+                                    <span className="text-sm font-medium text-ink">
                                         {weekOperator.name}
                                     </span>
                                     <span
@@ -290,7 +291,7 @@ export default function Index({
                                         key={day.iso}
                                         className={`rounded-lg border-t-4 bg-gray-50 p-3 ${roleProfile(weekOperator?.role).border}`}
                                     >
-                                        <h3 className="mb-2 text-sm font-semibold text-slate-800">
+                                        <h3 className="mb-2 text-sm font-semibold text-ink">
                                             {day.date.toLocaleDateString('it-IT', {
                                                 weekday: 'short',
                                                 day: 'numeric',

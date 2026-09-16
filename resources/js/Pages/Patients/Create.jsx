@@ -1,6 +1,7 @@
 import PatientFormFields from '@/Components/PatientFormFields';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
@@ -36,16 +37,16 @@ export default function Create() {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Nuovo paziente
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Nuovo paziente" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-3xl sm:px-6 lg:px-8">
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         <form onSubmit={submit} className="space-y-6">
                             <PatientFormFields
                                 data={data}

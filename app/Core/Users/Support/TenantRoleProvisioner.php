@@ -53,6 +53,7 @@ class TenantRoleProvisioner
                 'consents.manage', 'crm.manage',
                 'treatment_plans.view', 'treatment_plans.administer',
                 'reports.production.all',
+                'dashboard.admin.view',
             ],
             'aso' => [
                 'patients.view',

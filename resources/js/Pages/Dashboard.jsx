@@ -1,3 +1,4 @@
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 
@@ -5,21 +6,21 @@ export default function Dashboard() {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Dashboard
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Dashboard" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div className="overflow-hidden bg-white shadow-soft sm:rounded-card">
                         <div className="p-6 text-gray-900">
                             Accesso effettuato. Vai alla sezione{' '}
                             <a
                                 href={route('patients.index')}
-                                className="font-medium text-indigo-600 hover:underline"
+                                className="font-medium text-brand hover:underline"
                             >
                                 Pazienti
                             </a>

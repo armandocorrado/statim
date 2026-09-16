@@ -1,6 +1,7 @@
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
@@ -52,7 +53,7 @@ function Tooth({ number, condition, isSelected, onClick }) {
             className={
                 'flex h-10 w-10 items-center justify-center rounded-md border-2 text-xs font-semibold transition ' +
                 colorClasses +
-                (isSelected ? ' ring-2 ring-offset-1 ring-indigo-600' : '')
+                (isSelected ? ' ring-2 ring-offset-1 ring-brand' : '')
             }
             title={number}
         >
@@ -143,11 +144,11 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
     };
 
     return (
-        <div className="bg-white p-6 shadow-sm sm:rounded-lg">
-            <h3 className="mb-1 text-lg font-medium text-slate-900">Dente {tooth}</h3>
+        <div className="bg-white p-8 shadow-soft sm:rounded-card">
+            <h3 className="mb-1 text-lg font-medium text-ink">Dente {tooth}</h3>
             <p className="mb-4 text-sm text-slate-500">
                 Stato attuale:{' '}
-                <span className="font-medium text-slate-800">
+                <span className="font-medium text-ink">
                     {current
                         ? conditionOptions.find((o) => o.value === current.condition_type)?.label ?? current.condition_type
                         : 'Sano / non esaminato'}
@@ -161,7 +162,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                             <InputLabel htmlFor="condition_type" value="Nuovo stato" />
                             <select
                                 id="condition_type"
-                                className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                 value={data.condition_type}
                                 onChange={(e) => setData('condition_type', e.target.value)}
                             >
@@ -177,7 +178,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                             <input
                                 id="recorded_date"
                                 type="date"
-                                className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                 value={data.recorded_date}
                                 onChange={(e) => setData('recorded_date', e.target.value)}
                             />
@@ -186,7 +187,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                             <InputLabel htmlFor="diary_entry_id" value="Nota di diario collegata" />
                             <select
                                 id="diary_entry_id"
-                                className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                 value={data.diary_entry_id}
                                 onChange={(e) => setData('diary_entry_id', e.target.value)}
                             >
@@ -204,7 +205,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                         <textarea
                             id="notes"
                             rows={2}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-1 block w-full rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                             value={data.notes}
                             onChange={(e) => setData('notes', e.target.value)}
                         />
@@ -216,7 +217,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                 </form>
             )}
 
-            <h4 className="mb-2 text-sm font-semibold text-slate-700">Documenti collegati</h4>
+            <h4 className="mb-2 text-sm font-semibold text-ink-secondary">Documenti collegati</h4>
             {toothDocuments.length === 0 && (
                 <p className="mb-4 text-sm text-gray-400">Nessun documento collegato a questo dente.</p>
             )}
@@ -225,7 +226,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                     {toothDocuments.map((document) => (
                         <li key={document.id} className="flex items-center justify-between text-sm">
                             <span>
-                                <span className="font-medium text-slate-800">{document.original_filename}</span>{' '}
+                                <span className="font-medium text-ink">{document.original_filename}</span>{' '}
                                 <span className="text-xs text-gray-500">({document.document_type})</span>
                             </span>
                             <span className="flex items-center gap-3">
@@ -234,14 +235,14 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                                         href={route('dental.documents.preview', [patientId, document.id])}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-indigo-600 hover:underline"
+                                        className="text-brand hover:underline"
                                     >
                                         Visualizza
                                     </a>
                                 )}
                                 <a
                                     href={route('dental.documents.download', [patientId, document.id])}
-                                    className="text-indigo-600 hover:underline"
+                                    className="text-brand hover:underline"
                                 >
                                     Scarica
                                 </a>
@@ -251,7 +252,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                 </ul>
             )}
 
-            <h4 className="mb-2 text-sm font-semibold text-slate-700">Storico</h4>
+            <h4 className="mb-2 text-sm font-semibold text-ink-secondary">Storico</h4>
             {toothHistory.length === 0 && <p className="text-sm text-gray-400">Nessun evento registrato per questo dente.</p>}
             <ul className="space-y-2">
                 {toothHistory.map((record) => (
@@ -266,7 +267,7 @@ function ToothPanel({ patientId, tooth, history, diaryEntries, documentsByTooth,
                                 </span>
                             )}
                         </div>
-                        <p className="mt-0.5 font-medium text-slate-800">
+                        <p className="mt-0.5 font-medium text-ink">
                             {conditionOptions.find((o) => o.value === record.condition_type)?.label ?? record.condition_type}
                         </p>
                         {record.notes && <p className="mt-0.5 whitespace-pre-wrap text-slate-600">{record.notes}</p>}
@@ -302,38 +303,38 @@ export default function Odontogram({
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Odontogramma — {patient.last_name} {patient.first_name}
-                </h2>
+                </PageHeading>
             }
         >
             <Head title={`Odontogramma — ${patient.last_name} ${patient.first_name}`} />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between">
-                        <Link href={route('dental.show', patient.id)} className="text-sm text-indigo-600 hover:underline">
+                        <Link href={route('dental.show', patient.id)} className="text-sm text-brand hover:underline">
                             ← Torna alla cartella clinica
                         </Link>
                         <div className="flex overflow-hidden rounded-md border border-gray-300">
                             <button
                                 type="button"
                                 onClick={() => setDentition('permanent')}
-                                className={`px-3 py-1.5 text-sm ${dentition === 'permanent' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}
+                                className={`px-3 py-1.5 text-sm ${dentition === 'permanent' ? 'bg-brand text-white' : 'bg-white text-slate-600'}`}
                             >
                                 Permanenti
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setDentition('deciduous')}
-                                className={`px-3 py-1.5 text-sm ${dentition === 'deciduous' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}
+                                className={`px-3 py-1.5 text-sm ${dentition === 'deciduous' ? 'bg-brand text-white' : 'bg-white text-slate-600'}`}
                             >
                                 Decidui
                             </button>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         <Arch
                             layout={layout}
                             currentStates={currentStates}

@@ -23,6 +23,9 @@ test('the demo seeder provisions both tenants with one user per fixed role', fun
                 ->and($user->getRoleNames()->all())->toBe([$role]);
         }
 
-        expect(Patient::where('tenant_id', $tenant->id)->count())->toBe(5);
+        // 5 dal seeding base + il pool ampliato da DemoHistoricalDataSeeder
+        // (necessario per uno storico credibile sui grafici della dashboard
+        // admin — vedi CLAUDE.md, sezione "Comandi utili").
+        expect(Patient::where('tenant_id', $tenant->id)->count())->toBe(24);
     }
 });

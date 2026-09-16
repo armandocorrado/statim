@@ -1,5 +1,6 @@
 import ConsentsPanel from '@/Components/ConsentsPanel';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
@@ -50,16 +51,16 @@ export default function Show({ patient, consentOptions }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     {patient.last_name} {patient.first_name}
-                </h2>
+                </PageHeading>
             }
         >
             <Head title={`${patient.last_name} ${patient.first_name}`} />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-3xl sm:px-6 lg:px-8">
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <Field label="Cognome" value={patient.last_name} />
                             <Field label="Nome" value={patient.first_name} />
@@ -125,7 +126,7 @@ export default function Show({ patient, consentOptions }) {
                         <div className="mt-8 flex items-center gap-3">
                             <Link
                                 href={route('patients.edit', patient.id)}
-                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
                             >
                                 Modifica
                             </Link>

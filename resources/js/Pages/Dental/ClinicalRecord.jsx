@@ -1,6 +1,7 @@
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 
@@ -83,8 +84,8 @@ function AnamnesisSection({ patientId, anamnesis, canManage }) {
     ];
 
     return (
-        <div className="bg-white p-6 shadow-sm sm:rounded-lg">
-            <h3 className="mb-4 text-lg font-medium text-slate-900">
+        <div className="bg-white p-8 shadow-soft sm:rounded-card">
+            <h3 className="mb-4 text-lg font-medium text-ink">
                 Anamnesi
             </h3>
             <form onSubmit={submit} className="space-y-4">
@@ -95,7 +96,7 @@ function AnamnesisSection({ patientId, anamnesis, canManage }) {
                             id={key}
                             rows={2}
                             disabled={!canManage}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100"
+                            className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand disabled:bg-gray-100"
                             value={data[key]}
                             onChange={(e) => setData(key, e.target.value)}
                         />
@@ -131,7 +132,7 @@ function AddAlertForm({ patientId }) {
                 <InputLabel htmlFor="alert_category" value="Tipo" />
                 <select
                     id="alert_category"
-                    className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.category}
                     onChange={(e) => setData('category', e.target.value)}
                 >
@@ -144,7 +145,7 @@ function AddAlertForm({ patientId }) {
                 <input
                     id="alert_description"
                     type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.description}
                     onChange={(e) => setData('description', e.target.value)}
                 />
@@ -177,8 +178,8 @@ function DiarySection({ patientId, entries, canManage, hasFullAccess }) {
     };
 
     return (
-        <div className="bg-white p-6 shadow-sm sm:rounded-lg">
-            <h3 className="mb-4 text-lg font-medium text-slate-900">
+        <div className="bg-white p-8 shadow-soft sm:rounded-card">
+            <h3 className="mb-4 text-lg font-medium text-ink">
                 Diario clinico
             </h3>
 
@@ -190,7 +191,7 @@ function DiarySection({ patientId, entries, canManage, hasFullAccess }) {
                             <input
                                 id="entry_date"
                                 type="date"
-                                className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                 value={data.entry_date}
                                 onChange={(e) => setData('entry_date', e.target.value)}
                             />
@@ -200,7 +201,7 @@ function DiarySection({ patientId, entries, canManage, hasFullAccess }) {
                                 <InputLabel htmlFor="entry_section" value="Sezione" />
                                 <select
                                     id="entry_section"
-                                    className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                     value={data.section}
                                     onChange={(e) => setData('section', e.target.value)}
                                 >
@@ -213,7 +214,7 @@ function DiarySection({ patientId, entries, canManage, hasFullAccess }) {
                     <textarea
                         rows={3}
                         placeholder="Testo clinico della seduta…"
-                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="block w-full rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                         value={data.content}
                         onChange={(e) => setData('content', e.target.value)}
                     />
@@ -240,7 +241,7 @@ function DiarySection({ patientId, entries, canManage, hasFullAccess }) {
                                 {SECTION_LABELS[entry.section]}
                             </span>
                         </div>
-                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
                             {entry.content}
                         </p>
                     </li>
@@ -278,8 +279,8 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
     };
 
     return (
-        <div className="bg-white p-6 shadow-sm sm:rounded-lg">
-            <h3 className="mb-4 text-lg font-medium text-slate-900">
+        <div className="bg-white p-8 shadow-soft sm:rounded-card">
+            <h3 className="mb-4 text-lg font-medium text-ink">
                 Documenti
             </h3>
 
@@ -290,7 +291,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                             <InputLabel htmlFor="document_type" value="Tipo" />
                             <select
                                 id="document_type"
-                                className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                 value={data.document_type}
                                 onChange={(e) => setData('document_type', e.target.value)}
                             >
@@ -306,7 +307,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                                 <InputLabel htmlFor="document_section" value="Sezione" />
                                 <select
                                     id="document_section"
-                                    className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                     value={data.section}
                                     onChange={(e) => setData('section', e.target.value)}
                                 >
@@ -320,7 +321,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                             <input
                                 id="document_description"
                                 type="text"
-                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 block w-full rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                 value={data.description}
                                 onChange={(e) => setData('description', e.target.value)}
                             />
@@ -347,7 +348,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                                     className={
                                         'rounded border px-1.5 py-0.5 text-xs ' +
                                         (data.teeth.includes(tooth)
-                                            ? 'border-indigo-600 bg-indigo-600 text-white'
+                                            ? 'border-brand bg-brand text-white'
                                             : 'border-gray-300 bg-white text-slate-600')
                                     }
                                 >
@@ -368,7 +369,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                                         className={
                                             'rounded border px-1.5 py-0.5 text-xs ' +
                                             (data.teeth.includes(tooth)
-                                                ? 'border-indigo-600 bg-indigo-600 text-white'
+                                                ? 'border-brand bg-brand text-white'
                                                 : 'border-gray-300 bg-white text-slate-600')
                                         }
                                     >
@@ -395,7 +396,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                         className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm"
                     >
                         <div>
-                            <span className="font-medium text-slate-800">
+                            <span className="font-medium text-ink">
                                 {document.original_filename}
                             </span>{' '}
                             <span className="text-xs text-gray-500">
@@ -418,7 +419,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                                     ])}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-indigo-600 hover:underline"
+                                    className="text-brand hover:underline"
                                 >
                                     Visualizza
                                 </a>
@@ -428,7 +429,7 @@ function DocumentsSection({ patientId, documents, canManage, hasFullAccess, perm
                                     patientId,
                                     document.id,
                                 ])}
-                                className="text-indigo-600 hover:underline"
+                                className="text-brand hover:underline"
                             >
                                 Scarica
                             </a>
@@ -457,19 +458,19 @@ export default function ClinicalRecord({
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Cartella clinica — {patient.last_name} {patient.first_name}
-                </h2>
+                </PageHeading>
             }
         >
             <Head title={`Cartella clinica — ${patient.last_name} ${patient.first_name}`} />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-4xl space-y-6 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between">
                         <Link
                             href={route('patients.show', patient.id)}
-                            className="text-sm text-indigo-600 hover:underline"
+                            className="text-sm text-brand hover:underline"
                         >
                             ← Torna alla scheda paziente
                         </Link>
@@ -477,7 +478,7 @@ export default function ClinicalRecord({
                             {canViewTreatmentPlans && (
                                 <Link
                                     href={route('dental.treatment-plans.index', patient.id)}
-                                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                    className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
                                 >
                                     Piani di cura
                                 </Link>

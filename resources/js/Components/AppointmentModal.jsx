@@ -74,13 +74,13 @@ export default function AppointmentModal({
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
             <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
                 <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-slate-900">
+                    <h3 className="text-lg font-medium text-ink">
                         {isEditing ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
                     </h3>
                     {appointment?.patient && (
                         <Link
                             href={route('patients.show', appointment.patient.id)}
-                            className="text-sm text-indigo-600 hover:underline"
+                            className="text-sm text-brand hover:underline"
                         >
                             Apri scheda paziente →
                         </Link>
@@ -103,7 +103,7 @@ export default function AppointmentModal({
                         <InputLabel htmlFor="operator_id" value="Operatore" />
                         <select
                             id="operator_id"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100"
+                            className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand disabled:bg-gray-100"
                             value={data.operator_id}
                             disabled={!canManageAll}
                             onChange={(e) => setData('operator_id', e.target.value)}
@@ -126,7 +126,7 @@ export default function AppointmentModal({
                         <InputLabel htmlFor="assistant_id" value="Assistente alla poltrona" />
                         <select
                             id="assistant_id"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand"
                             value={data.assistant_id}
                             onChange={(e) => setData('assistant_id', e.target.value)}
                         >
@@ -177,7 +177,7 @@ export default function AppointmentModal({
                         <InputLabel htmlFor="appointment_type_id" value="Tipo" />
                         <select
                             id="appointment_type_id"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand"
                             value={data.appointment_type_id}
                             onChange={(e) =>
                                 setData('appointment_type_id', e.target.value)
@@ -201,7 +201,7 @@ export default function AppointmentModal({
                             <InputLabel htmlFor="status" value="Stato" />
                             <select
                                 id="status"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand"
                                 value={data.status}
                                 onChange={(e) =>
                                     setData('status', e.target.value)
@@ -222,7 +222,7 @@ export default function AppointmentModal({
                         <textarea
                             id="notes"
                             rows={3}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand"
                             value={data.notes}
                             onChange={(e) => setData('notes', e.target.value)}
                         />

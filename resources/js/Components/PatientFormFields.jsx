@@ -52,7 +52,7 @@ export default function PatientFormFields({ data, setData, errors }) {
                     <Field id="gender" label="Sesso" errors={errors}>
                         <select
                             id="gender"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand"
                             value={data.gender ?? ''}
                             onChange={(e) => setData('gender', e.target.value)}
                         >
@@ -115,7 +115,7 @@ export default function PatientFormFields({ data, setData, errors }) {
                     <Field id="source" label="Fonte di provenienza" errors={errors}>
                         <select
                             id="source"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand"
                             value={data.source ?? ''}
                             onChange={(e) => setData('source', e.target.value)}
                         >
@@ -137,7 +137,7 @@ export default function PatientFormFields({ data, setData, errors }) {
                 <Field id="notes" label="Note amministrative" errors={errors}>
                     <textarea
                         id="notes"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-1 block w-full rounded-control border-ink/15 shadow-sm focus:border-brand focus:ring-brand"
                         rows={4}
                         value={data.notes ?? ''}
                         onChange={(e) => setData('notes', e.target.value)}

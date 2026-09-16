@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(DemoTeamSeeder::class);
         $this->call(DemoAppointmentSeeder::class);
+        $this->call(DemoHistoricalDataSeeder::class);
     }
 
     private function createTenant(string $name, string $slug, string $emailDomain): void

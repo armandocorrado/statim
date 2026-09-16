@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
@@ -81,16 +82,16 @@ export default function Edit({ quote, serviceCatalogItems }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Modifica preventivo — {quote.patient.first_name} {quote.patient.last_name}
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Modifica preventivo" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         <form onSubmit={submit} className="space-y-6">
                             <div>
                                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -190,7 +191,7 @@ export default function Edit({ quote, serviceCatalogItems }) {
                                         Aggiungi riga vuota
                                     </SecondaryButton>
                                     <select
-                                        className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        className="rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                                         value=""
                                         onChange={(e) => e.target.value && addFromCatalog(e.target.value)}
                                     >

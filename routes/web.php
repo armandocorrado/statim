@@ -10,6 +10,7 @@ use App\Core\Quotes\Http\Controllers\QuoteController;
 use App\Core\Quotes\Http\Controllers\ServiceCatalogItemController;
 use App\Core\Users\Http\Controllers\InvitationAcceptController;
 use App\Core\Users\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Modules\Dental\Http\Controllers\DentalAlertController;
 use App\Modules\Dental\Http\Controllers\DentalAnamnesisController;
@@ -20,7 +21,6 @@ use App\Modules\Dental\Http\Controllers\DentalOdontogramController;
 use App\Modules\Dental\Http\Controllers\DentalTreatmentPlanController;
 use App\Modules\Dental\Http\Controllers\DentalTreatmentPlanItemController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return auth()->check()
@@ -28,9 +28,9 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified', 'tenant'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

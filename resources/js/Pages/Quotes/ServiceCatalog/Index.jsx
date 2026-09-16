@@ -1,5 +1,6 @@
 import InputLabel from '@/Components/InputLabel';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 
@@ -29,7 +30,7 @@ function AddItemForm() {
                     <input
                         id="name"
                         type="text"
-                        className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
                     />
@@ -41,7 +42,7 @@ function AddItemForm() {
                         id="category"
                         type="text"
                         placeholder="es. general, hygiene"
-                        className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                         value={data.category}
                         onChange={(e) => setData('category', e.target.value)}
                     />
@@ -52,7 +53,7 @@ function AddItemForm() {
                         id="base_price"
                         type="number"
                         step="0.01"
-                        className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                         value={data.base_price}
                         onChange={(e) => setData('base_price', e.target.value)}
                     />
@@ -64,7 +65,7 @@ function AddItemForm() {
                         id="default_vat_rate"
                         type="number"
                         step="0.01"
-                        className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                         value={data.default_vat_rate}
                         onChange={(e) => setData('default_vat_rate', e.target.value)}
                     />
@@ -74,7 +75,7 @@ function AddItemForm() {
                     <input
                         id="default_duration_minutes"
                         type="number"
-                        className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                         value={data.default_duration_minutes}
                         onChange={(e) => setData('default_duration_minutes', e.target.value)}
                     />
@@ -118,14 +119,14 @@ function EditableRow({ item, canManage }) {
         <tr className="border-b border-gray-100">
             <td className="px-3 py-2">
                 <input
-                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="w-full rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.name}
                     onChange={(e) => setData('name', e.target.value)}
                 />
             </td>
             <td className="px-3 py-2">
                 <input
-                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="w-full rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.category}
                     onChange={(e) => setData('category', e.target.value)}
                 />
@@ -134,7 +135,7 @@ function EditableRow({ item, canManage }) {
                 <input
                     type="number"
                     step="0.01"
-                    className="w-24 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="w-24 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.base_price}
                     onChange={(e) => setData('base_price', e.target.value)}
                 />
@@ -144,7 +145,7 @@ function EditableRow({ item, canManage }) {
                     type="number"
                     step="0.01"
                     placeholder="esente"
-                    className="w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="w-20 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.default_vat_rate}
                     onChange={(e) => setData('default_vat_rate', e.target.value)}
                 />
@@ -172,16 +173,16 @@ export default function Index({ items, canManage }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Listino prestazioni
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Listino prestazioni" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         {canManage && <AddItemForm />}
 
                         <table className="w-full text-left text-sm">

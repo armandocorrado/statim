@@ -26,7 +26,13 @@ test('the demo appointment seeder gives every odontoiatra 5 appointments per dem
         ];
 
         foreach ($odontoiatri as $operator) {
-            $appointments = Appointment::where('operator_id', $operator->id)->get();
+            // Solo gli appuntamenti odierni/futuri di DemoAppointmentSeeder:
+            // DemoHistoricalDataSeeder (che gira dopo, nella stessa
+            // DatabaseSeeder::run()) ne aggiunge molti altri nel passato,
+            // senza assistant_id — fuori dallo scope di questo test.
+            $appointments = Appointment::where('operator_id', $operator->id)
+                ->where('start_at', '>=', now()->startOfDay())
+                ->get();
             expect($appointments)->toHaveCount(5);
 
             $localPart = explode('@', $operator->email)[0];

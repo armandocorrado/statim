@@ -1,5 +1,6 @@
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
@@ -27,7 +28,7 @@ function NewPlanForm({ patientId }) {
                     id="title"
                     type="text"
                     placeholder="es. Piano conservativo 2026"
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.title}
                     onChange={(e) => setData('title', e.target.value)}
                 />
@@ -44,20 +45,20 @@ export default function Index({ patient, plans, canCreate }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Piani di cura — {patient.last_name} {patient.first_name}
-                </h2>
+                </PageHeading>
             }
         >
             <Head title={`Piani di cura — ${patient.last_name} ${patient.first_name}`} />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
-                    <Link href={route('dental.show', patient.id)} className="text-sm text-indigo-600 hover:underline">
+                    <Link href={route('dental.show', patient.id)} className="text-sm text-brand hover:underline">
                         ← Torna alla cartella clinica
                     </Link>
 
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         {canCreate && <NewPlanForm patientId={patient.id} />}
 
                         {plans.length === 0 && <p className="text-sm text-gray-400">Nessun piano di cura ancora.</p>}
@@ -66,7 +67,7 @@ export default function Index({ patient, plans, canCreate }) {
                                 <li key={plan.id} className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm">
                                     <Link
                                         href={route('dental.treatment-plans.show', [patient.id, plan.id])}
-                                        className="text-indigo-600 hover:underline"
+                                        className="text-brand hover:underline"
                                     >
                                         {plan.title || 'Piano senza titolo'}
                                     </Link>

@@ -37,7 +37,7 @@ function GrantForm({ patientId, purposeValue, options, onDone }) {
                     Modalità di raccolta
                 </label>
                 <select
-                    className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.collection_method}
                     onChange={(e) =>
                         setData('collection_method', e.target.value)
@@ -62,7 +62,7 @@ function GrantForm({ patientId, purposeValue, options, onDone }) {
                     Versione informativa
                 </label>
                 <select
-                    className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.policy_version}
                     onChange={(e) => setData('policy_version', e.target.value)}
                 >
@@ -84,7 +84,7 @@ function GrantForm({ patientId, purposeValue, options, onDone }) {
                 <label className="block text-xs text-gray-500">Data</label>
                 <input
                     type="date"
-                    className="mt-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
                     value={data.granted_at}
                     onChange={(e) => setData('granted_at', e.target.value)}
                 />
@@ -129,7 +129,7 @@ export default function ConsentsPanel({
 
     return (
         <div className="bg-white p-6 shadow-sm sm:rounded-lg">
-            <h3 className="mb-4 text-lg font-medium text-slate-900">
+            <h3 className="mb-4 text-lg font-medium text-ink">
                 Consensi
             </h3>
 
@@ -152,7 +152,7 @@ export default function ConsentsPanel({
                         >
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <span className="text-sm font-medium text-slate-900">
+                                    <span className="text-sm font-medium text-ink">
                                         {label}
                                     </span>
                                     {active ? (

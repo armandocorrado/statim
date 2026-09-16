@@ -1,5 +1,6 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 
@@ -52,16 +53,16 @@ export default function Show({ quote, canManage, canIssue, canDelete, canTransit
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <PageHeading>
                     Preventivo — {quote.patient.first_name} {quote.patient.last_name}
-                </h2>
+                </PageHeading>
             }
         >
             <Head title="Preventivo" />
 
-            <div className="py-12">
+            <div className="py-16">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="bg-white p-8 shadow-soft sm:rounded-card">
                         <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <Field label="Stato" value={STATUS_LABELS[quote.status]} />
                             <Field label="Data emissione" value={formatDate(quote.issued_at)} />
@@ -71,7 +72,7 @@ export default function Show({ quote, canManage, canIssue, canDelete, canTransit
                                 value={
                                     <Link
                                         href={route('patients.show', quote.patient.id)}
-                                        className="text-indigo-600 hover:underline"
+                                        className="text-brand hover:underline"
                                     >
                                         {quote.patient.first_name} {quote.patient.last_name}
                                     </Link>
@@ -151,7 +152,7 @@ export default function Show({ quote, canManage, canIssue, canDelete, canTransit
                             {canManage && isDraft && (
                                 <Link
                                     href={route('quotes.edit', quote.id)}
-                                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                    className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
                                 >
                                     Modifica prezzi
                                 </Link>
