@@ -8,6 +8,8 @@ use App\Core\Consents\Enums\PolicyVersion;
 use App\Core\Patients\Http\Requests\StorePatientRequest;
 use App\Core\Patients\Http\Requests\UpdatePatientRequest;
 use App\Core\Patients\Models\Patient;
+use App\Core\Quotes\Enums\QuoteStatus;
+use App\Core\Quotes\Models\Quote;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,7 +59,7 @@ class PatientController extends Controller
             ->with('success', 'Paziente creato correttamente.');
     }
 
-    public function show(Patient $patient): Response
+    public function show(Request $request, Patient $patient): Response
     {
         $this->authorize('view', $patient);
 
@@ -68,6 +70,18 @@ class PatientController extends Controller
                 'collectionMethods' => self::enumOptions(ConsentCollectionMethod::cases()),
                 'policyVersions' => self::enumOptions(PolicyVersion::cases()),
             ],
+            // Solo un elenco + link al preventivo — l'azione "genera
+            // documento fiscale" vive sulla pagina del preventivo
+            // (QuotePolicy::generateBillingDocument), non duplicata qui.
+            // Vuoto (non un 403) se l'utente non ha il permesso: la
+            // sezione semplicemente non compare, invece di rompere la
+            // pagina paziente per chi non gestisce i preventivi.
+            'acceptedQuotes' => $request->user()->can('viewAny', Quote::class)
+                ? Quote::where('patient_id', $patient->id)
+                    ->whereIn('status', array_column(QuoteStatus::acceptedStatuses(), 'value'))
+                    ->orderByDesc('issued_at')
+                    ->get(['id', 'status', 'issued_at', 'total_amount'])
+                : [],
         ]);
     }
 

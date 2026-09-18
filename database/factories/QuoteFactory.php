@@ -53,4 +53,11 @@ class QuoteFactory extends Factory
             'responded_at' => now()->toDateString(),
         ]);
     }
+
+    public function completed(): static
+    {
+        return $this->accepted()->state(fn () => [
+            'status' => QuoteStatus::Completed,
+        ]);
+    }
 }

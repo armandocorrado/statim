@@ -6,7 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function Create() {
+export default function Create({ vatExemptionReasons }) {
     const { data, setData, post, processing, errors } = useForm({
         patient_id: null,
         recipient_patient_id: null,
@@ -16,8 +16,7 @@ export default function Create() {
                 quantity: 1,
                 unit_price: '',
                 vat_rate: '',
-                vat_exemption_reason:
-                    'Art. 10 n. 18 DPR 633/72 - prestazione sanitaria',
+                vat_exemption_reason: 'art. 10 n. 18 DPR 633/72',
             },
         ],
     });
@@ -52,6 +51,7 @@ export default function Create() {
                                 setPatientLabel={setPatientLabel}
                                 recipientLabel={recipientLabel}
                                 setRecipientLabel={setRecipientLabel}
+                                vatExemptionReasons={vatExemptionReasons}
                             />
 
                             <div className="flex items-center gap-3">

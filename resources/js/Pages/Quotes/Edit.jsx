@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import VatExemptionReasonField from '@/Components/VatExemptionReasonField';
 import PageHeading from '@/Components/PageHeading';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -28,7 +29,7 @@ function computeTotals(lines) {
     return taxable;
 }
 
-export default function Edit({ quote, serviceCatalogItems }) {
+export default function Edit({ quote, serviceCatalogItems, vatExemptionReasons }) {
     const { data, setData, put, processing, errors } = useForm({
         lines: quote.lines.map((line) => ({
             service_catalog_item_id: line.service_catalog_item_id,
@@ -163,10 +164,10 @@ export default function Edit({ quote, serviceCatalogItems }) {
                                                         />
                                                     </td>
                                                     <td className="px-3 py-2">
-                                                        <TextInput
-                                                            className="w-full"
+                                                        <VatExemptionReasonField
+                                                            reasons={vatExemptionReasons}
                                                             value={line.vat_exemption_reason}
-                                                            onChange={(e) => updateLine(index, 'vat_exemption_reason', e.target.value)}
+                                                            onChange={(value) => updateLine(index, 'vat_exemption_reason', value)}
                                                         />
                                                     </td>
                                                     <td className="px-3 py-2 text-right">

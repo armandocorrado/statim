@@ -30,7 +30,7 @@ class DemoTeamSeeder extends Seeder
      * Stessa password demo di DatabaseSeeder — un'unica credenziale nota
      * per tutto l'ambiente demo, non una seconda convenzione separata.
      */
-    private const DEMO_PASSWORD = 'medcare!wild';
+    private const DEMO_PASSWORD = 'MedCare#Wild2026';
 
     /**
      * @return list<array{first_name: string, last_name: string, role: string}>

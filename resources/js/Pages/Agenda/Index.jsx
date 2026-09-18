@@ -94,6 +94,8 @@ export default function Index({
     date,
     operatorId,
     operators,
+    visibleOperators,
+    canViewAll,
     appointments,
     appointmentTypes,
     canManageAll,
@@ -120,8 +122,8 @@ export default function Index({
 
     const dayColumns = useMemo(() => {
         const targetOperators = operatorId
-            ? operators.filter((o) => o.id === operatorId)
-            : operators;
+            ? visibleOperators.filter((o) => o.id === operatorId)
+            : visibleOperators;
 
         return targetOperators.map((op) => ({
             operator: op,
@@ -129,10 +131,10 @@ export default function Index({
                 (a) => a.operator.id === op.id || a.assistant?.id === op.id,
             ),
         }));
-    }, [operators, appointments, operatorId]);
+    }, [visibleOperators, appointments, operatorId]);
 
-    const weekOperatorId = operatorId || operators[0]?.id;
-    const weekOperator = operators.find((o) => o.id === weekOperatorId);
+    const weekOperatorId = operatorId || visibleOperators[0]?.id;
+    const weekOperator = visibleOperators.find((o) => o.id === weekOperatorId);
     const weekDays = useMemo(() => {
         if (view !== 'week') return [];
         const start = new Date(date);
@@ -196,20 +198,35 @@ export default function Index({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <select
-                                className="rounded-control border-ink/15 text-sm shadow-sm focus:border-brand focus:ring-brand"
-                                value={operatorId ?? ''}
-                                onChange={(e) =>
-                                    navigate({ operator_id: e.target.value || null })
-                                }
-                            >
-                                <option value="">Tutti gli operatori</option>
-                                {operators.map((op) => (
-                                    <option key={op.id} value={op.id}>
-                                        {op.name} — {roleProfile(op.role).label}
-                                    </option>
-                                ))}
-                            </select>
+                            {canViewAll && visibleOperators.length > 1 && (
+                                <div className="flex max-w-xs gap-1 overflow-x-auto rounded-control bg-cream p-1 text-sm sm:max-w-md">
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate({ operator_id: null })}
+                                        className={`shrink-0 rounded-[0.5rem] px-3 py-1.5 font-medium transition ${
+                                            !operatorId
+                                                ? 'bg-white text-ink shadow-soft'
+                                                : 'text-ink-secondary hover:text-ink'
+                                        }`}
+                                    >
+                                        Tutti
+                                    </button>
+                                    {visibleOperators.map((op) => (
+                                        <button
+                                            key={op.id}
+                                            type="button"
+                                            onClick={() => navigate({ operator_id: op.id })}
+                                            className={`shrink-0 rounded-[0.5rem] px-3 py-1.5 font-medium transition ${
+                                                operatorId === op.id
+                                                    ? 'bg-white text-ink shadow-soft'
+                                                    : 'text-ink-secondary hover:text-ink'
+                                            }`}
+                                        >
+                                            {op.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
 
                             <SecondaryButton
                                 onClick={() => navigate({ view: 'day' })}

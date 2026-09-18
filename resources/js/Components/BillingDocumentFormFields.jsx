@@ -2,13 +2,14 @@ import InputError from '@/Components/InputError';
 import PatientPicker from '@/Components/PatientPicker';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import VatExemptionReasonField from '@/Components/VatExemptionReasonField';
 
 const EMPTY_LINE = {
     description: '',
     quantity: 1,
     unit_price: '',
     vat_rate: '',
-    vat_exemption_reason: 'Art. 10 n. 18 DPR 633/72 - prestazione sanitaria',
+    vat_exemption_reason: 'art. 10 n. 18 DPR 633/72',
 };
 
 function computeTotals(lines) {
@@ -36,6 +37,7 @@ export default function BillingDocumentFormFields({
     setPatientLabel,
     recipientLabel,
     setRecipientLabel,
+    vatExemptionReasons,
 }) {
     const updateLine = (index, field, value) => {
         const lines = [...data.lines];
@@ -194,16 +196,14 @@ export default function BillingDocumentFormFields({
                                         />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <TextInput
-                                            className="w-full"
-                                            value={
-                                                line.vat_exemption_reason ?? ''
-                                            }
-                                            onChange={(e) =>
+                                        <VatExemptionReasonField
+                                            reasons={vatExemptionReasons}
+                                            value={line.vat_exemption_reason ?? ''}
+                                            onChange={(value) =>
                                                 updateLine(
                                                     index,
                                                     'vat_exemption_reason',
-                                                    e.target.value,
+                                                    value,
                                                 )
                                             }
                                         />

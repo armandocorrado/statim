@@ -6,6 +6,7 @@ use App\Core\Audit\Concerns\Auditable;
 use App\Core\Billing\Enums\BillingDocumentStatus;
 use App\Core\Billing\Enums\FiscalChannel;
 use App\Core\Patients\Models\Patient;
+use App\Core\Quotes\Models\Quote;
 use App\Core\Tenancy\Concerns\BelongsToTenant;
 use App\Models\User;
 use Database\Factories\BillingDocumentFactory;
@@ -72,6 +73,19 @@ class BillingDocument extends Model
     public function recipient(): BelongsTo
     {
         return $this->belongsTo(Patient::class, 'recipient_patient_id');
+    }
+
+    /**
+     * A differenza di `Quote.source_treatment_plan_id` (riferimento opaco
+     * verso Dental, senza relazione Eloquent qui) questo è un legame
+     * Core↔Core vero e proprio — Billing può dipendere da Quotes
+     * liberamente, sono entrambi nel core trasversale. Nullable: la
+     * maggior parte dei documenti resta creata a mano, non da un
+     * preventivo.
+     */
+    public function sourceQuote(): BelongsTo
+    {
+        return $this->belongsTo(Quote::class, 'source_quote_id');
     }
 
     public function lines(): HasMany

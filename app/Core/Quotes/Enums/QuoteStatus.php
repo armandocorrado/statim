@@ -27,4 +27,18 @@ enum QuoteStatus: string
             self::Completed => 'Completato',
         };
     }
+
+    /**
+     * Il "preventivo accettato" nel senso lato del termine — usato ovunque
+     * nel codice serva la stessa domanda: tasso di accettazione
+     * (QuoteController/DashboardController), eleggibilità alla
+     * generazione di un documento fiscale (QuotePolicy). Un solo posto da
+     * aggiornare se in futuro il bucket cambia.
+     *
+     * @return list<self>
+     */
+    public static function acceptedStatuses(): array
+    {
+        return [self::Accepted, self::InProgress, self::Completed];
+    }
 }

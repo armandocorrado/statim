@@ -1,8 +1,10 @@
 <?php
 
+use App\Core\Billing\Models\BillingDocument;
 use App\Core\Patients\Models\Patient;
 use App\Core\Quotes\Enums\QuoteStatus;
 use App\Core\Quotes\Models\Quote;
+use App\Core\Quotes\Models\QuoteLine;
 use App\Core\Quotes\Models\ServiceCatalogItem;
 use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Models\DentalTreatmentPlan;
@@ -172,4 +174,108 @@ test('a quote cannot be viewed across tenants', function () {
     $quoteB = Quote::factory()->create(['tenant_id' => $tenantB->id, 'patient_id' => $patientB->id]);
 
     $this->actingAs($segreteriaA)->get("/quotes/{$quoteB->id}")->assertForbidden();
+});
+
+test('segreteria can generate a billing document from an accepted quote, discount frozen into the unit price', function () {
+    $tenant = Tenant::factory()->create();
+    $segreteria = userForTenant($tenant, 'segreteria');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'first_name' => 'Mario', 'last_name' => 'Rossi']);
+    $quote = Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    QuoteLine::factory()->create([
+        'tenant_id' => $tenant->id,
+        'quote_id' => $quote->id,
+        'description' => 'Otturazione',
+        'quantity' => 2,
+        'unit_price' => 100,
+        'discount_percent' => 10,
+        'vat_rate' => null,
+        'vat_exemption_reason' => 'art. 10 n. 18 DPR 633/72',
+        'sort_order' => 0,
+    ]);
+
+    $response = $this->actingAs($segreteria)->post("/quotes/{$quote->id}/generate-billing-document");
+
+    $response->assertSessionHasNoErrors();
+
+    $document = BillingDocument::where('source_quote_id', $quote->id)->firstOrFail();
+    expect($document->status->value)->toBe('draft')
+        ->and($document->patient_id)->toBe($patient->id)
+        ->and($document->recipient_name)->toBe('Mario Rossi')
+        ->and($document->document_number)->toBeNull();
+
+    // La fattura non ha un campo sconto separato: il 10% si "congela" nel
+    // prezzo unitario (100 * 0.9 = 90), non compare come riga a parte.
+    $line = $document->lines()->firstOrFail();
+    expect((float) $line->unit_price)->toBe(90.0)
+        ->and((float) $line->line_total)->toBe(180.0)
+        ->and($line->description)->toBe('Otturazione')
+        ->and($line->vat_exemption_reason)->toBe('art. 10 n. 18 DPR 633/72');
+});
+
+test('a quote can generate more than one billing document over time', function () {
+    $tenant = Tenant::factory()->create();
+    $segreteria = userForTenant($tenant, 'segreteria');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $quote = Quote::factory()->completed()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    QuoteLine::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id]);
+
+    $this->actingAs($segreteria)->post("/quotes/{$quote->id}/generate-billing-document")->assertSessionHasNoErrors();
+    $this->actingAs($segreteria)->post("/quotes/{$quote->id}/generate-billing-document")->assertSessionHasNoErrors();
+
+    expect(BillingDocument::where('source_quote_id', $quote->id)->count())->toBe(2);
+});
+
+test('a billing document cannot be generated from a draft or rejected quote', function () {
+    $tenant = Tenant::factory()->create();
+    $segreteria = userForTenant($tenant, 'segreteria');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $draft = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $rejected = Quote::factory()->rejected()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+
+    $this->actingAs($segreteria)->post("/quotes/{$draft->id}/generate-billing-document")->assertForbidden();
+    $this->actingAs($segreteria)->post("/quotes/{$rejected->id}/generate-billing-document")->assertForbidden();
+
+    expect(BillingDocument::count())->toBe(0);
+});
+
+test('odontoiatra cannot generate a billing document even from an accepted quote', function () {
+    $tenant = Tenant::factory()->create();
+    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $quote = Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    QuoteLine::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id]);
+
+    $this->actingAs($odontoiatra)->post("/quotes/{$quote->id}/generate-billing-document")->assertForbidden();
+});
+
+test('a billing document cannot be generated from another tenant quote', function () {
+    $tenantA = Tenant::factory()->create();
+    $tenantB = Tenant::factory()->create();
+    $segreteriaA = userForTenant($tenantA, 'segreteria');
+    $patientB = Patient::factory()->create(['tenant_id' => $tenantB->id]);
+    $quoteB = Quote::factory()->accepted()->create(['tenant_id' => $tenantB->id, 'patient_id' => $patientB->id]);
+
+    $this->actingAs($segreteriaA)->post("/quotes/{$quoteB->id}/generate-billing-document")->assertForbidden();
+});
+
+test('numbering continues seamlessly between manually created documents and ones generated from a quote', function () {
+    $tenant = Tenant::factory()->create();
+    $admin = userForTenant($tenant, 'admin');
+    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+
+    $this->actingAs($admin)->post('/billing', [
+        'patient_id' => $patient->id,
+        'lines' => [['description' => 'Visita', 'quantity' => 1, 'unit_price' => 80, 'vat_rate' => null]],
+    ]);
+    $manualDocument = BillingDocument::where('patient_id', $patient->id)->firstOrFail();
+    $this->actingAs($admin)->patch("/billing/{$manualDocument->id}/issue");
+
+    $quote = Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    QuoteLine::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id]);
+    $this->actingAs($admin)->post("/quotes/{$quote->id}/generate-billing-document");
+    $generatedDocument = BillingDocument::where('source_quote_id', $quote->id)->firstOrFail();
+    $this->actingAs($admin)->patch("/billing/{$generatedDocument->id}/issue");
+
+    expect($manualDocument->fresh()->document_number)->toBe(1)
+        ->and($generatedDocument->fresh()->document_number)->toBe(2);
 });

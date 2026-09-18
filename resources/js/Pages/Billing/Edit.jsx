@@ -6,7 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function Edit({ document }) {
+export default function Edit({ document, vatExemptionReasons }) {
     const { data, setData, put, processing, errors } = useForm({
         patient_id: document.patient.id,
         recipient_patient_id: document.recipient?.id ?? null,
@@ -55,6 +55,7 @@ export default function Edit({ document }) {
                                 setPatientLabel={setPatientLabel}
                                 recipientLabel={recipientLabel}
                                 setRecipientLabel={setRecipientLabel}
+                                vatExemptionReasons={vatExemptionReasons}
                             />
 
                             <div className="flex items-center gap-3">

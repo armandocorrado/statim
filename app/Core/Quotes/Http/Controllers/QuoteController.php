@@ -2,7 +2,11 @@
 
 namespace App\Core\Quotes\Http\Controllers;
 
+use App\Core\Billing\Enums\BillingDocumentStatus;
+use App\Core\Billing\Models\BillingDocument;
+use App\Core\Billing\Support\BillingDocumentRecipientSnapshot;
 use App\Core\Billing\Support\BillingDocumentTotalsCalculator;
+use App\Core\Billing\Support\VatExemptionReasons;
 use App\Core\Quotes\Enums\QuoteStatus;
 use App\Core\Quotes\Http\Requests\UpdateQuoteRequest;
 use App\Core\Quotes\Http\Requests\UpdateQuoteStatusRequest;
@@ -32,9 +36,7 @@ class QuoteController extends Controller
             ->paginate(15);
 
         $issued = Quote::query()->where('status', '!=', QuoteStatus::Draft->value)->count();
-        $accepted = Quote::query()->whereIn('status', [
-            QuoteStatus::Accepted->value, QuoteStatus::InProgress->value, QuoteStatus::Completed->value,
-        ])->count();
+        $accepted = Quote::query()->whereIn('status', array_column(QuoteStatus::acceptedStatuses(), 'value'))->count();
 
         return Inertia::render('Quotes/Index', [
             'quotes' => $quotes,
@@ -63,6 +65,10 @@ class QuoteController extends Controller
             'canDelete' => $user->can('delete', $quote),
             'canTransition' => $user->can('transition', $quote),
             'allowedNextStatuses' => QuoteTransitions::allowedNextValues($quote->status),
+            'canGenerateBillingDocument' => $user->can('generateBillingDocument', $quote),
+            'billingDocuments' => $quote->billingDocuments()
+                ->orderByDesc('created_at')
+                ->get(['id', 'status', 'document_number', 'document_year', 'issued_at', 'total_amount', 'created_at']),
         ]);
     }
 
@@ -73,6 +79,7 @@ class QuoteController extends Controller
         return Inertia::render('Quotes/Edit', [
             'quote' => $quote->load(['patient:id,first_name,last_name', 'lines']),
             'serviceCatalogItems' => ServiceCatalogItem::where('is_active', true)->orderBy('name')->get(),
+            'vatExemptionReasons' => VatExemptionReasons::commonReasons(),
         ]);
     }
 
@@ -117,6 +124,46 @@ class QuoteController extends Controller
         $quote->save();
 
         return to_route('quotes.show', $quote)->with('success', 'Preventivo emesso.');
+    }
+
+    /**
+     * Genera un documento fiscale (bozza) dal preventivo — stesso pattern
+     * di DentalTreatmentPlanController::generateQuote() un livello più su
+     * (piano di cura → preventivo). 1:N deliberato: un preventivo può
+     * generare più documenti nel tempo (es. fatturazione a fasi/acconti),
+     * nessun vincolo di unicità su source_quote_id.
+     *
+     * Lo sconto per riga si "congela" nel prezzo unitario finale — la
+     * fattura non ha un campo sconto separato (BillingDocumentLine non lo
+     * prevede), a differenza del preventivo dove il negoziato resta
+     * visibile come percentuale a parte.
+     */
+    public function generateBillingDocument(Quote $quote): RedirectResponse
+    {
+        $this->authorize('generateBillingDocument', $quote);
+
+        $document = new BillingDocument(['patient_id' => $quote->patient_id]);
+        $document->tenant_id = $quote->tenant_id;
+        $document->source_quote_id = $quote->id;
+        $document->status = BillingDocumentStatus::Draft;
+        $document->created_by = request()->user()->id;
+        BillingDocumentRecipientSnapshot::apply($document, $quote->patient_id, null);
+        $document->save();
+
+        foreach ($quote->lines as $index => $line) {
+            $newLine = $document->lines()->make([
+                'description' => $line->description,
+                'quantity' => $line->quantity,
+                'unit_price' => $line->discountedUnitPrice(),
+                'vat_rate' => $line->vat_rate,
+                'vat_exemption_reason' => $line->vat_exemption_reason,
+                'sort_order' => $index,
+            ]);
+            $newLine->line_total = round((float) $line->quantity * $line->discountedUnitPrice(), 2);
+            $newLine->save();
+        }
+
+        return to_route('billing.show', $document)->with('success', 'Documento fiscale generato dal preventivo.');
     }
 
     public function updateStatus(UpdateQuoteStatusRequest $request, Quote $quote): RedirectResponse

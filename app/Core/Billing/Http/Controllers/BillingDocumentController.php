@@ -11,9 +11,10 @@ use App\Core\Billing\Http\Requests\StoreBillingDocumentRequest;
 use App\Core\Billing\Http\Requests\UpdateBillingDocumentRequest;
 use App\Core\Billing\Models\BillingDocument;
 use App\Core\Billing\Support\BillingDocumentNumberer;
+use App\Core\Billing\Support\BillingDocumentRecipientSnapshot;
 use App\Core\Billing\Support\BillingDocumentTotalsCalculator;
 use App\Core\Billing\Support\FiscalChannelResolver;
-use App\Core\Patients\Models\Patient;
+use App\Core\Billing\Support\VatExemptionReasons;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,9 @@ class BillingDocumentController extends Controller
     {
         $this->authorize('create', BillingDocument::class);
 
-        return Inertia::render('Billing/Create');
+        return Inertia::render('Billing/Create', [
+            'vatExemptionReasons' => VatExemptionReasons::commonReasons(),
+        ]);
     }
 
     public function store(StoreBillingDocumentRequest $request): RedirectResponse
@@ -53,7 +56,7 @@ class BillingDocumentController extends Controller
         ]);
         $document->status = BillingDocumentStatus::Draft;
         $document->created_by = $request->user()->id;
-        $this->applyRecipientSnapshot($document, $data);
+        BillingDocumentRecipientSnapshot::apply($document, $data['patient_id'], $data['recipient_patient_id'] ?? null);
         $document->save();
 
         $this->replaceLines($document, $data['lines']);
@@ -66,7 +69,12 @@ class BillingDocumentController extends Controller
         $this->authorize('view', $document);
 
         return Inertia::render('Billing/Show', [
-            'document' => $document->load(['patient:id,first_name,last_name', 'recipient:id,first_name,last_name', 'lines']),
+            'document' => $document->load([
+                'patient:id,first_name,last_name',
+                'recipient:id,first_name,last_name',
+                'lines',
+                'sourceQuote:id,issued_at',
+            ]),
         ]);
     }
 
@@ -76,6 +84,7 @@ class BillingDocumentController extends Controller
 
         return Inertia::render('Billing/Edit', [
             'document' => $document->load(['patient:id,first_name,last_name', 'recipient:id,first_name,last_name', 'lines']),
+            'vatExemptionReasons' => VatExemptionReasons::commonReasons(),
         ]);
     }
 
@@ -85,7 +94,7 @@ class BillingDocumentController extends Controller
 
         $document->patient_id = $data['patient_id'];
         $document->recipient_patient_id = $data['recipient_patient_id'] ?? null;
-        $this->applyRecipientSnapshot($document, $data);
+        BillingDocumentRecipientSnapshot::apply($document, $data['patient_id'], $data['recipient_patient_id'] ?? null);
         $document->save();
 
         $this->replaceLines($document, $data['lines']);
@@ -147,26 +156,6 @@ class BillingDocumentController extends Controller
         });
 
         return to_route('billing.show', $document)->with('success', 'Documento emesso.');
-    }
-
-    /**
-     * @param  array{patient_id: string, recipient_patient_id: ?string}  $data
-     */
-    private function applyRecipientSnapshot(BillingDocument $document, array $data): void
-    {
-        $recipient = Patient::find($data['recipient_patient_id'] ?? $data['patient_id']);
-
-        if (! $recipient) {
-            return;
-        }
-
-        $document->recipient_name = "{$recipient->first_name} {$recipient->last_name}";
-        $document->recipient_fiscal_code = $recipient->fiscal_code;
-        $document->recipient_vat_number = $recipient->vat_number;
-        $document->recipient_address_street = $recipient->address_street;
-        $document->recipient_address_postal_code = $recipient->address_postal_code;
-        $document->recipient_address_city = $recipient->address_city;
-        $document->recipient_address_province = $recipient->address_province;
     }
 
     /**

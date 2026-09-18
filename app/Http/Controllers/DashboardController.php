@@ -164,9 +164,7 @@ class DashboardController extends Controller
      */
     private function quoteAcceptanceBreakdown(): array
     {
-        $accepted = Quote::query()->whereIn('status', [
-            QuoteStatus::Accepted->value, QuoteStatus::InProgress->value, QuoteStatus::Completed->value,
-        ])->count();
+        $accepted = Quote::query()->whereIn('status', array_column(QuoteStatus::acceptedStatuses(), 'value'))->count();
         $rejected = Quote::query()->where('status', QuoteStatus::Rejected->value)->count();
         $pending = Quote::query()->where('status', QuoteStatus::Issued->value)->count();
         $issued = $accepted + $rejected + $pending;

@@ -98,6 +98,26 @@ export default function Show({ document }) {
                                 label="Intestatario"
                                 value={document.recipient_name}
                             />
+                            {document.source_quote && (
+                                <Field
+                                    label="Generato dal preventivo"
+                                    value={
+                                        <Link
+                                            href={route(
+                                                'quotes.show',
+                                                document.source_quote.id,
+                                            )}
+                                            className="text-brand hover:underline"
+                                        >
+                                            Preventivo del{' '}
+                                            {formatDate(
+                                                document.source_quote
+                                                    .issued_at,
+                                            )}
+                                        </Link>
+                                    }
+                                />
+                            )}
                             {!isDraft && (
                                 <Field
                                     label="Canale fiscale"

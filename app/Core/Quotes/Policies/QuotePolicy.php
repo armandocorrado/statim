@@ -77,4 +77,18 @@ class QuotePolicy
             && $user->can('treatment_plans.administer')
             && ! $quote->isDraft();
     }
+
+    /**
+     * Genera un documento fiscale (bozza) dal preventivo — un'azione di
+     * FATTURAZIONE, non di gestione preventivi: gate su `billing.manage`
+     * (chi emette è segreteria/admin), non su `treatment_plans.administer`.
+     * Solo da preventivi accettati/in corso/completati — un preventivo in
+     * bozza o rifiutato non è mai stato/non è più accettato dal paziente.
+     */
+    public function generateBillingDocument(User $user, Quote $quote): bool
+    {
+        return $quote->tenant_id === $user->tenant_id
+            && $user->can('billing.manage')
+            && $quote->isEligibleForBillingDocument();
+    }
 }

@@ -62,6 +62,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::delete('quotes/{quote}', [QuoteController::class, 'destroy'])->name('quotes.destroy');
     Route::patch('quotes/{quote}/issue', [QuoteController::class, 'issue'])->name('quotes.issue');
     Route::patch('quotes/{quote}/status', [QuoteController::class, 'updateStatus'])->name('quotes.status.update');
+    Route::post('quotes/{quote}/generate-billing-document', [QuoteController::class, 'generateBillingDocument'])->name('quotes.generate-billing-document');
 
     Route::get('service-catalog', [ServiceCatalogItemController::class, 'index'])->name('service-catalog.index');
     Route::post('service-catalog', [ServiceCatalogItemController::class, 'store'])->name('service-catalog.store');

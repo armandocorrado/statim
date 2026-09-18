@@ -27,9 +27,28 @@ function Field({ label, value }) {
     );
 }
 
-export default function Show({ quote, canManage, canIssue, canDelete, canTransition, allowedNextStatuses }) {
+export default function Show({
+    quote,
+    canManage,
+    canIssue,
+    canDelete,
+    canTransition,
+    allowedNextStatuses,
+    canGenerateBillingDocument,
+    billingDocuments,
+}) {
     const { delete: destroy, patch, processing } = useForm();
     const isDraft = quote.status === 'draft';
+
+    const confirmGenerateBillingDocument = () => {
+        if (
+            confirm(
+                'Generare un documento fiscale da questo preventivo? Verrà creata una bozza da rivedere ed emettere separatamente.',
+            )
+        ) {
+            router.post(route('quotes.generate-billing-document', quote.id));
+        }
+    };
 
     const confirmDelete = (e) => {
         e.preventDefault();
@@ -144,10 +163,41 @@ export default function Show({ quote, canManage, canIssue, canDelete, canTransit
                             </div>
                         </div>
 
+                        {billingDocuments.length > 0 && (
+                            <div className="mt-8">
+                                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                                    Documenti fiscali generati
+                                </h3>
+                                <ul className="space-y-1 text-sm">
+                                    {billingDocuments.map((document) => (
+                                        <li key={document.id}>
+                                            <Link
+                                                href={route('billing.show', document.id)}
+                                                className="text-brand hover:underline"
+                                            >
+                                                {document.document_number
+                                                    ? `Documento ${document.document_number}/${document.document_year}`
+                                                    : `Bozza del ${formatDate(document.created_at)}`}
+                                            </Link>{' '}
+                                            {document.total_amount && (
+                                                <span className="text-gray-500">— {document.total_amount} €</span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         <div className="mt-8 flex flex-wrap items-center gap-3">
                             <Link href={route('quotes.index')}>
                                 <SecondaryButton type="button">Torna alla lista</SecondaryButton>
                             </Link>
+
+                            {canGenerateBillingDocument && (
+                                <SecondaryButton type="button" onClick={confirmGenerateBillingDocument}>
+                                    Genera documento fiscale
+                                </SecondaryButton>
+                            )}
 
                             {canManage && isDraft && (
                                 <Link

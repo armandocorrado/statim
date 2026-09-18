@@ -7,15 +7,17 @@ i debiti tecnici noti e le questioni aperte. Il resto del file documenta
 il *perché* delle scelte fatte modulo per modulo — questa sezione è
 l'unica pensata per essere riletta all'inizio di ogni nuova sessione.
 
-## Stato del progetto (aggiornato 2026-09-14)
+## Stato del progetto (aggiornato 2026-09-18)
 
-**209/209 test Pest passano** (SQLite in-memory). Ogni modulo è stato
+**218/218 test Pest passano** (SQLite in-memory). Ogni modulo è stato
 verificato anche manualmente via HTTP reale contro MySQL locale durante
 lo sviluppo (login → azione → tinker per ispezionare il DB) — pattern
-consolidato in questa sessione, da ripetere per ogni nuovo modulo.
-Nessun deploy reale su Plesk ancora tentato in questa sessione: sviluppo
-e verifica sono stati fatti solo in locale (`php artisan serve` + MySQL
-locale, `npm run build`/`dev`).
+consolidato, da ripetere per ogni nuovo modulo. **Un primo deploy reale
+su Plesk è avvenuto** in questa fase (non più solo locale): trovato e
+risolto un crash in produzione causato da `laravel/pao` (dipendenza dev
+non necessaria, rimossa — vedi commit dedicato); demo seedata anche lì.
+Resta comunque da verificare in modo sistematico l'intera checklist di
+deploy sotto "Questioni aperte".
 
 ### Checklist Fase 1 · MVP odontoiatria (da `MedCare-Roadmap.docx`)
 
@@ -25,7 +27,7 @@ locale, `npm run build`/`dev`).
 | 2 | [C] Anagrafica paziente | ✅ Fatto |
 | 3 | [C] Consensi e privacy | ✅ Fatto |
 | 4 | [C] Agenda come hub centrale | 🟡 Parziale |
-| 5 | [C] Fatturazione (Sistema TS, SdI) | 🟡 Solo fondamenta |
+| 5 | [C] Fatturazione (Sistema TS, SdI) | 🟡 Flusso interno completo, integrazioni esterne mock |
 | 6 | [V] Cartella clinica + odontogramma | ✅ Fatto |
 | 7 | [V] Preventivi e piani di cura | ✅ Fatto |
 | 8 | [C] WhatsApp anti no-show + layout per ruolo | ❌ Non iniziato |
@@ -39,13 +41,17 @@ piano di cura, preventivi e fatturazione sono pagine separate raggiunte
 da navigazione normale, non un pannello unificato agganciato
 all'appuntamento. Prossimo pezzo naturale per chiudere la Fase 1.
 
-**Punto 5 — cosa manca esattamente**: solo le fondamenta interne
-(stati Draft/Issued, numerazione annuale, calcolo totali/IVA) dietro tre
+**Punto 5 — cosa manca esattamente**: il flusso interno è ora completo,
+incluso il collegamento preventivo accettato→documento fiscale (sezione
+"Fatturazione", "Collegamento Preventivo → Documento fiscale"). Quello
+che resta sono **solo** le tre integrazioni esterne reali dietro i
 gateway mock (`ElectronicInvoiceGateway`/`HealthExpenseReportingGateway`/
-`DigitalPreservationGateway`). Le integrazioni reali richiedono
-certificati/credenziali SdI, un ambiente di test Sistema TS e un
-conservatore accreditato — **nessuno di questi è ancora disponibile**,
-è un blocco esterno al codice, non tecnico. Vedi sezione "Fatturazione".
+`DigitalPreservationGateway`) — un provider/intermediario SdI accreditato
+(+ certificati), l'accreditamento al Sistema TS (+ ambiente di test), un
+conservatore accreditato, e la validazione delle causali IVA/regola
+SdI-vs-TS con un commercialista. **Nessuno di questi è ancora
+disponibile**, è un blocco esterno al codice, non tecnico — dettaglio
+completo di cosa serve per ciascuna nella sezione "Fatturazione".
 
 **Punto 8 — non iniziato**: nessuna integrazione WhatsApp, nessun
 layout adattivo per ruolo, nessuna "scheda paziente unificata a
@@ -59,12 +65,12 @@ Ogni voce ha il dettaglio completo nella sezione di modulo linkata — qui
 solo l'indice per orientarsi velocemente:
 
 - **Fatturazione**: nota di credito, tracciamento incassi/pagamenti,
-  intestatario azienda (non-`Patient`) — sezione "Fatturazione".
-- **Preventivi**: `BillingDocument.source_quote_id` (aggancio
-  accettato→fatturato, sarà una FK reale Core↔Core quando arriva), invio
-  preventivo via email/portale, pagamenti dilazionati, sconto a importo
-  fisso come alternativa alla percentuale — sezione "Preventivi e piani
-  di cura".
+  intestatario azienda (non-`Patient`), le tre integrazioni esterne reali
+  (SdI/Sistema TS/conservazione) — sezione "Fatturazione". Il collegamento
+  preventivo→fattura NON è più tra i debiti: fatto, vedi quella sezione.
+- **Preventivi**: invio preventivo via email/portale, pagamenti
+  dilazionati, sconto a importo fisso come alternativa alla percentuale —
+  sezione "Preventivi e piani di cura".
 - **Agenda**: squadra clinica (filtro visibilità per team, oggi
   `aso`/`igienista` vedono l'intero studio come stato interinale), KPI e
   spettanze per operatore, prenotazione online, promemoria automatici —
@@ -459,10 +465,12 @@ convergere altri moduli futuri (una futura `Prestazione` potrà referenziare
 
 ## Fatturazione (`App\Core\Billing`)
 
-CORE trasversale. **Solo le fondamenta interne in questa fase**: nessuna
-integrazione reale con SdI (fattura elettronica) o Sistema TS (Tessera
-Sanitaria), nessuna conservazione a norma vera — tutte e tre isolate
-dietro interfacce con implementazioni mock, vedi sotto.
+CORE trasversale. **Il flusso interno è completo** (fondamenta +
+collegamento col ciclo economico, sezione dedicata sotto): quello che
+resta fuori sono solo le tre integrazioni esterne reali (SdI, Sistema TS,
+conservazione a norma), deliberatamente dietro interfacce con
+implementazioni mock — vedi "Le tre porte esterne" sotto per il motivo e
+cosa serve prima di sostituirle.
 
 - **`BillingDocument`**: `patient_id` sempre valorizzato (la prestazione,
   serve al Sistema TS anche quando l'intestatario è diverso);
@@ -471,7 +479,11 @@ dietro interfacce con implementazioni mock, vedi sotto.
   del destinatario al momento della creazione — non un join live su
   `Patient`: se il paziente corregge poi un indirizzo, i documenti già
   creati non devono cambiare silenziosamente. Stesso principio già
-  applicato a `Consent.given_by_patient_id`.
+  applicato a `Consent.given_by_patient_id`. Lo snapshot è isolato in
+  `App\Core\Billing\Support\BillingDocumentRecipientSnapshot`, condiviso
+  fra la creazione manuale (`BillingDocumentController`) e la generazione
+  da preventivo (sotto) — un solo posto che sa come si congela un
+  destinatario.
 - **Stati: solo `Draft` → `Issued`**, deliberatamente niente "annullato".
   Una volta emesso (numero assegnato), un documento fiscale non si
   cancella né si modifica — correggerlo richiederà una nota di credito
@@ -483,11 +495,17 @@ dietro interfacce con implementazioni mock, vedi sotto.
   emessa.
 - **Esenzione IVA senza aliquote inventate**: `vat_rate` (decimale,
   nullable — null/0 = esente) + `vat_exemption_reason` (testo libero, **non**
-  un enum di codici norma — non sono certo che l'elenco applicabile sia
-  solo "art. 10 n. 18 DPR 633/72", il più comune per le prestazioni
-  sanitarie ma non necessariamente l'unico). Precompilato come
-  suggerimento nella UI, resta modificabile. **Da validare con un
-  commercialista** prima dell'uso reale.
+  un enum di codici norma a livello di schema — non sono certo che
+  l'elenco applicabile sia solo "art. 10 n. 18 DPR 633/72", il più comune
+  per le prestazioni sanitarie ma non necessariamente l'unico). La colonna
+  resta libera, ma `App\Core\Billing\Support\VatExemptionReasons` offre
+  ora le causali sanitarie più comuni (art. 10 n. 18/19/27-ter DPR 633/72)
+  come **aiuto alla UI**: un menu a tendina in `VatExemptionReasonField`
+  (riusato da Preventivi e Fatturazione, un solo punto da aggiornare) con
+  "Altro" che apre il campo libero — nessuna validazione server-side
+  irrigidita, l'"Altro" resta la valvola di sicurezza. **Da validare con
+  un commercialista** prima dell'uso reale — sia l'elenco stesso sia se
+  ne mancano altre causali applicabili a MedCare.
 - **Numerazione**: annuale con reset (convenzione più comune in Italia),
   tabella contatore dedicata `billing_document_counters`
   (`App\Core\Billing\Support\BillingDocumentNumberer`), **non** un
@@ -504,11 +522,28 @@ dietro interfacce con implementazioni mock, vedi sotto.
   `ElectronicInvoiceGateway` (SdI), `HealthExpenseReportingGateway`
   (Sistema TS), `DigitalPreservationGateway` (conservazione a norma) — tre
   interfacce, tre implementazioni `Mock*` (`App\Core\Billing\Gateways`)
-  bindate in `AppServiceProvider::register()`. **Cosa serve prima di
-  sostituirle con implementazioni reali**: certificati e credenziali SdI,
-  ambiente di test Sistema TS, un conservatore accreditato per la
-  conservazione. Cambiare solo quei binding quando arriverà quella fase —
-  nessun'altra riga del modulo dipende dai dettagli esterni.
+  bindate in `AppServiceProvider::register()`. Restano **mock per scelta
+  deliberata**: dipendono da accreditamenti/provider esterni non
+  disponibili ora, non da un limite tecnico del codice. Cambiare solo
+  quei binding quando arriverà la fase reale — nessun'altra riga del
+  modulo dipende dai dettagli esterni (`issue()` chiama sempre
+  l'interfaccia, mai l'implementazione concreta). **Cosa serve prima di
+  sostituire ciascuna**:
+  - `ElectronicInvoiceGateway` (SdI): un provider/intermediario
+    accreditato per la fattura elettronica (o l'accesso diretto ai
+    servizi SdI dell'Agenzia delle Entrate), credenziali e certificato di
+    firma/trasmissione, generazione XML FatturaPA reale (oggi non
+    generato in nessuna forma — vedi vincolo esplicito sotto).
+  - `HealthExpenseReportingGateway` (Sistema TS): accreditamento della
+    struttura al Sistema Tessera Sanitaria (richiede tempo, non solo
+    credenziali), ambiente di test messo a disposizione dal Sistema TS
+    prima del reale.
+  - `DigitalPreservationGateway`: un conservatore accreditato AgID (o
+    equivalente), formato/canale di invio dei documenti da conservare.
+  - **Trasversale a tutte e tre**: validazione delle causali di esenzione
+    IVA e della regola SdI-vs-Sistema TS (`FiscalChannelResolver`) con un
+    commercialista — non è un dettaglio tecnico, condiziona cosa le tre
+    integrazioni reali devono effettivamente fare.
 - **La regola SdI vs Sistema TS — esplicita, non implicita**
   (`App\Core\Billing\Support\FiscalChannelResolver`): un documento le cui
   spese sono riportate al Sistema TS non deve **mai** essere inviato
@@ -531,10 +566,63 @@ dietro interfacce con implementazioni mock, vedi sotto.
   **riservato e non usato**: il tracciamento incassi è un'entità distinta,
   non nello scope di questa passata (lo suggerisce già il fatto che sia
   un permesso separato da `billing.manage`).
+- **Vincolo esplicito, non solo "mock" per comodo**: nessuna riga di
+  questo modulo genera un XML SdI (FatturaPA) reale, nemmeno a scopo di
+  test — i tre gateway restituiscono solo un riferimento finto
+  (`MOCK-SDI-...`), niente di più. Generare un XML sintatticamente corretto
+  è lavoro della fase reale, condizionato dalle scelte del provider/
+  intermediario che verrà scelto (ogni provider ha convenzioni proprie
+  su come costruire la richiesta).
 - **Rimandato deliberatamente**: nota di credito (per correggere un
   documento emesso), tracciamento incassi/pagamenti (`payments.manage`
   riservato per quello), intestatario azienda (non-`Patient`), le
   integrazioni reali stesse (vedi sopra).
+
+### Collegamento Preventivo → Documento fiscale
+
+`Quote::billingDocuments()` / `BillingDocument::sourceQuote()` — a
+differenza di `Quote.source_treatment_plan_id` (riferimento *opaco* verso
+il verticale Dental, senza relazione Eloquent) questo è un legame
+**Core↔Core vero e proprio**: `billing_documents.source_quote_id` è una
+FK reale verso `quotes.id` (nullable, `restrictOnDelete`). Billing può
+dipendere da Quotes liberamente — sono entrambi nel core trasversale,
+nessun confine da rispettare come per Dental.
+
+- **1:N, deliberato**: un preventivo può generare **più** documenti
+  fiscali nel tempo (es. fatturazione a fasi/acconti) — nessun vincolo di
+  unicità su `source_quote_id`, stessa logica già in vigore per
+  piano di cura→preventivi.
+- **Da quali stati**: solo preventivi `Accepted`/`InProgress`/`Completed`
+  — lo stesso bucket "accettato" già usato ovunque nel codice (tasso di
+  accettazione), centralizzato in `QuoteStatus::acceptedStatuses()`
+  (`Quote::isEligibleForBillingDocument()` lo consulta). Un preventivo in
+  bozza o rifiutato non è mai stato/non è più accettato dal paziente.
+  Draft/Rejected restano fuori.
+- **Chi genera**: `QuoteController::generateBillingDocument()`, gate su
+  `QuotePolicy::generateBillingDocument()` — permesso **`billing.manage`**
+  (non `treatment_plans.administer`: è un'azione di fatturazione, non di
+  gestione preventivi). Stesso pattern di
+  `DentalTreatmentPlanController::generateQuote()` un livello più su
+  (piano di cura → preventivo): l'azione vive sul controller del modello
+  *sorgente*, gated da una policy sul modello sorgente.
+- **Il documento nasce sempre in `Draft`** — mai auto-emesso: resta
+  rivedibile (intestatario, righe) prima di "Emetti", stesso principio
+  dei documenti creati a mano. Il preventivo **non cambia stato**
+  automaticamente quando si genera un documento: sono due macchine a
+  stati indipendenti, collegate dal dato (`source_quote_id`), non da un
+  trigger a cascata.
+- **Lo sconto si congela nel prezzo unitario finale — scelta esplicita**:
+  `BillingDocumentLine` non ha un campo sconto separato (a differenza di
+  `QuoteLine.discount_percent`), quindi la generazione copia
+  `QuoteLine::discountedUnitPrice()` come `unit_price` della riga
+  fatturata — la fattura non mostra mai una riga "sconto" a parte, il
+  negoziato resta visibile solo sul preventivo.
+- **UI**: bottone "Genera documento fiscale" su `Quotes/Show.jsx`
+  (elenca anche i documenti già generati, se presenti); `Billing/Show.jsx`
+  mostra un link indietro al preventivo di origine se `source_quote_id`
+  è presente; `Patients/Show.jsx` elenca i preventivi accettati del
+  paziente con link al preventivo (l'azione di generazione resta sulla
+  pagina del preventivo, non duplicata sulla scheda paziente).
 
 ## Preventivi e piani di cura (`App\Core\Quotes` + `App\Modules\Dental`)
 
@@ -640,11 +728,12 @@ completato) → tracciamento accettazione → futuro aggancio a Fatturazione.
   tal quale da Billing, non duplicato): lo sconto sconta il prezzo
   unitario, quella classe resta quella già testata, senza doverle
   insegnare a conoscere gli sconti.
-- **Rimandato deliberatamente** (registrato, non costruito): l'aggancio
-  fiscale vero e proprio (`BillingDocument` non ha ancora un
-  `source_quote_id` — quando arriverà, sarà una FK reale, Core↔Core,
-  nessun confine da rispettare, a differenza del riferimento opaco verso
-  Dental), invio del preventivo al paziente via email/portale, pagamenti
+- **L'aggancio fiscale preventivo→fattura è fatto** (`BillingDocument.
+  source_quote_id`, FK reale Core↔Core) — vedi sezione "Fatturazione",
+  "Collegamento Preventivo → Documento fiscale". Non è più tra i debiti
+  di questa sezione.
+- **Rimandato deliberatamente** (registrato, non costruito): invio del
+  preventivo al paziente via email/portale, pagamenti
   dilazionati/finanziamenti, collegamento retroattivo di denti a una voce
   di piano già salvata (i denti si scelgono solo alla creazione/modifica
   della voce), sconto a importo fisso come alternativa alla percentuale.
@@ -972,7 +1061,7 @@ npm run dev              # oppure: composer run dev
 php artisan test         # Pest, SQLite in-memory
 ```
 
-Utenti demo dopo il seeder (password `medcare!wild` per tutti):
+Utenti demo dopo il seeder (password `MedCare#Wild2026` per tutti):
 `admin@rossi.test`, `odontoiatra@rossi.test`, `igienista@rossi.test`,
 `aso@rossi.test`, `segreteria@rossi.test` (tenant Studio Rossi) e gli
 equivalenti `@bianchi.test` (tenant Studio Bianchi) — utili per verificare

@@ -3,6 +3,7 @@
 namespace App\Core\Quotes\Models;
 
 use App\Core\Audit\Concerns\Auditable;
+use App\Core\Billing\Models\BillingDocument;
 use App\Core\Patients\Models\Patient;
 use App\Core\Quotes\Enums\QuoteStatus;
 use App\Core\Tenancy\Concerns\BelongsToTenant;
@@ -54,6 +55,15 @@ class Quote extends Model
         return $this->hasMany(QuoteLine::class)->orderBy('sort_order');
     }
 
+    /**
+     * Un preventivo può generare più documenti fiscali nel tempo (es.
+     * fatturazione a fasi/acconti) — 1:N, non 1:1, per scelta esplicita.
+     */
+    public function billingDocuments(): HasMany
+    {
+        return $this->hasMany(BillingDocument::class, 'source_quote_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -62,5 +72,10 @@ class Quote extends Model
     public function isDraft(): bool
     {
         return $this->status === QuoteStatus::Draft;
+    }
+
+    public function isEligibleForBillingDocument(): bool
+    {
+        return in_array($this->status, QuoteStatus::acceptedStatuses(), true);
     }
 }

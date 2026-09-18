@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     /**
      * Password for every seeded demo user.
      */
-    private const DEMO_PASSWORD = 'medcare!wild';
+    private const DEMO_PASSWORD = 'MedCare#Wild2026';
 
     /**
      * Seeds two demo tenants so tenant isolation is visible/testable manually:

@@ -29,7 +29,18 @@ function formatAddress(street, postalCode, city, province) {
     return parts.length ? parts.join(', ') : null;
 }
 
-export default function Show({ patient, consentOptions }) {
+const QUOTE_STATUS_LABELS = {
+    accepted: 'Accettato',
+    in_progress: 'In corso',
+    completed: 'Completato',
+};
+
+function formatDate(value) {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString('it-IT');
+}
+
+export default function Show({ patient, consentOptions, acceptedQuotes }) {
     const { delete: destroy, processing } = useForm();
     const permissions = usePage().props.auth.permissions;
     const canManageConsents = permissions.includes('consents.manage');
@@ -155,6 +166,31 @@ export default function Show({ patient, consentOptions }) {
                         </div>
                     </div>
                 </div>
+
+                {acceptedQuotes.length > 0 && (
+                    <div className="mx-auto mt-6 max-w-3xl sm:px-6 lg:px-8">
+                        <div className="bg-white p-6 shadow-soft sm:rounded-card">
+                            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                                Preventivi accettati
+                            </h3>
+                            <ul className="space-y-1 text-sm">
+                                {acceptedQuotes.map((quote) => (
+                                    <li key={quote.id}>
+                                        <Link
+                                            href={route('quotes.show', quote.id)}
+                                            className="text-brand hover:underline"
+                                        >
+                                            Preventivo del {formatDate(quote.issued_at)}
+                                        </Link>{' '}
+                                        <span className="text-gray-500">
+                                            — {QUOTE_STATUS_LABELS[quote.status]} — {quote.total_amount} €
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mx-auto mt-6 max-w-3xl sm:px-6 lg:px-8">
                     <ConsentsPanel

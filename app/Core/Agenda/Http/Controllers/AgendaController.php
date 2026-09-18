@@ -57,11 +57,26 @@ class AgendaController extends Controller
             ->orderBy('start_at')
             ->get();
 
+        // `operators` resta l'elenco COMPLETO dello studio — serve al modale
+        // appuntamento per assegnare operatore/assistente (un odontoiatra
+        // deve poter scegliere un ASO come assistente anche se non vede
+        // l'agenda altrui). `visibleOperators` è invece ciò che alimenta la
+        // griglia/il filtro dell'agenda: chi non ha `agenda.view.all` (oggi
+        // odontoiatra/igienista) vede solo se stesso, coerente col filtro
+        // già applicato sopra a `$appointments` — niente colonne vuote per
+        // i colleghi.
+        $canViewAll = $user->can('agenda.view.all');
+        $visibleOperators = $canViewAll
+            ? $operators
+            : $operators->where('id', $user->id)->values();
+
         return Inertia::render('Agenda/Index', [
             'view' => $view,
             'date' => $date->toDateString(),
             'operatorId' => $operatorId,
             'operators' => $operators,
+            'visibleOperators' => $visibleOperators,
+            'canViewAll' => $canViewAll,
             'appointments' => $appointments,
             'appointmentTypes' => AppointmentType::query()
                 ->where('is_active', true)

@@ -31,6 +31,14 @@ test('odontoiatra sees only their own appointments in the agenda', function () {
         ->component('Agenda/Index')
         ->has('appointments', 1)
         ->where('appointments.0.id', $ownAppointment->id)
+        ->where('canViewAll', false)
+        // Senza agenda.view.all la griglia non deve mostrare una colonna
+        // vuota per ogni collega dello studio — solo la propria, coerente
+        // con gli appuntamenti già filtrati sopra. `operators` (usato dal
+        // modale per assegnare un ASO) resta invece l'elenco completo.
+        ->has('visibleOperators', 1)
+        ->where('visibleOperators.0.id', $odontoiatra->id)
+        ->has('operators', 2)
     );
 });
 
@@ -58,7 +66,13 @@ test('segreteria sees every operators appointments in the agenda', function () {
 
     $response = $this->actingAs($segreteria)->get('/agenda?view=day&date='.now()->addDay()->toDateString());
 
-    $response->assertInertia(fn ($page) => $page->has('appointments', 2));
+    $response->assertInertia(fn ($page) => $page
+        ->has('appointments', 2)
+        ->where('canViewAll', true)
+        // segreteria stessa ha agenda.view.all, quindi compare anche lei
+        // nell'elenco operatori (3: odontoiatra, igienista, segreteria).
+        ->has('visibleOperators', 3)
+    );
 });
 
 test('the appointment carries enough data to open the patient sheet without a second lookup', function () {
