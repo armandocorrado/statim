@@ -22,6 +22,20 @@ class TenantConnectionResolver
 {
     private ?Tenant $current = null;
 
+    /**
+     * La connessione di default dell'app PRIMA di qualunque risoluzione
+     * tenant in questo ciclo di vita (request/comando) — a cosa tornare in
+     * release(). Catturata alla creazione del singleton, non hardcoded,
+     * cosi' resta corretta sia in produzione/sviluppo (mysql) sia nei test
+     * (sqlite).
+     */
+    private readonly string $originalDefaultConnection;
+
+    public function __construct()
+    {
+        $this->originalDefaultConnection = DB::getDefaultConnection();
+    }
+
     public function forTenant(Tenant $tenant): void
     {
         if (! $tenant->is_active) {
@@ -34,6 +48,14 @@ class TenantConnectionResolver
         // Fail-fast: scopriamo subito un DB irraggiungibile/inesistente,
         // non alla prima query reale eseguita altrove nel codice.
         DB::connection('tenant')->getPdo();
+
+        // Bridge temporaneo (Tappa 2): i 22 modelli di dominio non
+        // dichiarano ancora esplicitamente connection='tenant' (arriva con
+        // la Tappa 3, stesso pattern gia' usato da Tenant/TenantUser verso
+        // 'central'). Fino ad allora, far diventare 'tenant' la connessione
+        // di default dell'app e' l'unico modo perche' quei modelli seguano
+        // lo studio risolto senza toccarli uno per uno adesso.
+        DB::setDefaultConnection('tenant');
 
         $this->current = $tenant;
     }
@@ -52,6 +74,7 @@ class TenantConnectionResolver
     {
         Config::set('database.connections.tenant.database', null);
         DB::purge('tenant');
+        DB::setDefaultConnection($this->originalDefaultConnection);
 
         $this->current = null;
     }

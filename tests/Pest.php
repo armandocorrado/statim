@@ -44,7 +44,49 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Provisiona uno studio di prova REALE per i test del login a due step
+ * (Tappa 2): un file sqlite temporaneo (non ':memory:' - ogni connessione
+ * ':memory:' e' un DB isolato per suo conto, non riutilizzabile per
+ * simulare "un altro studio" nello stesso test), schema di dominio
+ * migrato, un utente e la riga tenant_users corrispondente. Stesso schema
+ * (tenant + utente + mappa centrale) del comando tenant:seed-test-studio,
+ * qui in forma leggera per i test.
+ *
+ * @return array{tenant: \App\Core\Tenancy\Models\Tenant, user: \App\Models\User, path: string}
+ */
+function provisionLoginTestTenant(array $tenantAttrs = [], array $userAttrs = []): array
 {
-    // ..
+    $path = sys_get_temp_dir().'/medcare_test_'.bin2hex(random_bytes(8)).'.sqlite';
+    touch($path);
+
+    $tenant = \App\Core\Tenancy\Models\Tenant::factory()->create(array_merge(
+        ['database_name' => $path],
+        $tenantAttrs,
+    ));
+
+    $resolver = app(\App\Core\Tenancy\Support\TenantConnectionResolver::class);
+    $resolver->forTenant($tenant);
+
+    \Illuminate\Support\Facades\Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => 'database/migrations',
+        '--force' => true,
+    ]);
+
+    $user = \App\Models\User::factory()->create(array_merge(
+        ['tenant_id' => $tenant->id],
+        $userAttrs,
+    ));
+
+    \App\Core\Tenancy\Models\TenantUser::create([
+        'email' => $user->email,
+        'tenant_id' => $tenant->id,
+        'remote_user_id' => $user->id,
+        'is_active' => true,
+    ]);
+
+    $resolver->release();
+
+    return ['tenant' => $tenant, 'user' => $user, 'path' => $path];
 }

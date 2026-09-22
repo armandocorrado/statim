@@ -86,13 +86,12 @@ test('an already accepted invitation token cannot be reused', function () {
 });
 
 test('a deactivated user cannot log in even with correct credentials', function () {
-    $user = User::factory()->create(['is_active' => false]);
+    ['user' => $user] = provisionLoginTestTenant(userAttrs: ['is_active' => false]);
 
-    $response = $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
+    $this->post(route('login.identify'), ['email' => $user->email]);
 
-    $response->assertInvalid(['email']);
+    $response = $this->post('/login', ['password' => 'password']);
+
+    $response->assertInvalid(['password']);
     $this->assertGuest();
 });

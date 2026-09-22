@@ -81,6 +81,27 @@ it('usingTenant() rilascia la connessione se non c\'era un tenant precedente', f
     expect($resolver->current())->toBeNull();
 });
 
+it('forTenant() fa diventare tenant la connessione di default (bridge Tappa 2)', function () {
+    $originalDefault = config('database.default');
+    $tenant = Tenant::factory()->create(['database_name' => ':memory:']);
+
+    app(TenantConnectionResolver::class)->forTenant($tenant);
+
+    expect(config('database.default'))->toBe('tenant')
+        ->and($originalDefault)->not->toBe('tenant');
+});
+
+it('release() ripristina la connessione di default originale dell\'app', function () {
+    $originalDefault = config('database.default');
+    $tenant = Tenant::factory()->create(['database_name' => ':memory:']);
+
+    $resolver = app(TenantConnectionResolver::class);
+    $resolver->forTenant($tenant);
+    $resolver->release();
+
+    expect(config('database.default'))->toBe($originalDefault);
+});
+
 it('Tenant vive sulla connessione central, non su quella di default', function () {
     $tenant = Tenant::factory()->create();
 

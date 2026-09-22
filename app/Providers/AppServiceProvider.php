@@ -67,5 +67,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ServiceCatalogItem::class, ServiceCatalogItemPolicy::class);
 
         Event::listen(NotificationSending::class, EnforceConsentGate::class);
+
+        // Path separato (non database/migrations/*) apposta: quando si
+        // migra lo schema di dominio su un NUOVO database studio con
+        // --path=database/migrations (che esclude questa cartella), le
+        // migration del registro centrale non vengono ritentate lì — il
+        // centrale esiste una volta sola, non per-studio. Un `migrate`
+        // senza --path (uso normale/test) le include comunque entrambe.
+        $this->loadMigrationsFrom(database_path('migrations/central'));
     }
 }
