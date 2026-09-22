@@ -19,7 +19,7 @@ return new class extends Migration
     {
         Schema::create('quote_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
             $table->foreignUlid('quote_id')->constrained()->cascadeOnDelete();
             $table->foreignUlid('service_catalog_item_id')->nullable()->constrained()->nullOnDelete();
 

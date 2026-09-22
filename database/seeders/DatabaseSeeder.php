@@ -38,6 +38,10 @@ class DatabaseSeeder extends Seeder
         $tenant = Tenant::create([
             'name' => $name,
             'slug' => $slug,
+            // Placeholder in attesa del provisioning vero (Tappa successiva:
+            // comando tenant:create) — oggi tutte le tabelle restano ancora
+            // sulla connessione condivisa di default, non su questo DB.
+            'database_name' => 'medcare_tenant_'.str_replace('-', '_', $slug),
             'email' => "info@{$emailDomain}",
             'is_active' => true,
         ]);

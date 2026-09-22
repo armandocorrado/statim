@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->cascadeOnDelete();
+            $table->ulid('tenant_id')->index();
             $table->foreignUlid('user_id')->nullable()->constrained('users')->nullOnDelete();
 
             $table->string('action');

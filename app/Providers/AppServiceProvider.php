@@ -21,6 +21,7 @@ use App\Core\Quotes\Models\Quote;
 use App\Core\Quotes\Models\ServiceCatalogItem;
 use App\Core\Quotes\Policies\QuotePolicy;
 use App\Core\Quotes\Policies\ServiceCatalogItemPolicy;
+use App\Core\Tenancy\Support\TenantConnectionResolver;
 use App\Core\Users\Policies\UserPolicy;
 use App\Models\User;
 use Illuminate\Notifications\Events\NotificationSending;
@@ -44,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ElectronicInvoiceGateway::class, MockElectronicInvoiceGateway::class);
         $this->app->bind(HealthExpenseReportingGateway::class, MockHealthExpenseReportingGateway::class);
         $this->app->bind(DigitalPreservationGateway::class, MockDigitalPreservationGateway::class);
+
+        // Singleton: la stessa istanza per tutta la request/il comando, cosi'
+        // TenantConnectionResolver::current() riflette sempre l'ultimo studio risolto.
+        $this->app->singleton(TenantConnectionResolver::class);
     }
 
     /**

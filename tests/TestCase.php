@@ -6,5 +6,22 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
-    //
+    /**
+     * Aggiunge 'central' (registro tenant/tenant_users) alla connessione di
+     * default: senza, le righe Tenant create nei test (21 file usano
+     * Tenant::factory) non verrebbero racchiuse nello stesso rollback
+     * per-test del resto, con rischio di dati accumulati tra un test e
+     * l'altro o schema mancante dal secondo test in poi.
+     *
+     * Deve essere una PROPRIETA', non un override del metodo
+     * connectionsToTransact(): RefreshDatabase::connectionsToTransact()
+     * legge `property_exists($this, 'connectionsToTransact')`. Un metodo
+     * definito qui verrebbe invece oscurato dal metodo dello stesso nome nel
+     * trait quando Pest applica ->use(RefreshDatabase::class) alla
+     * sottoclasse generata (un trait usato direttamente in una classe ha
+     * precedenza su un metodo solo ereditato da una classe genitore).
+     *
+     * @var list<string>
+     */
+    protected $connectionsToTransact = ['sqlite', 'central'];
 }

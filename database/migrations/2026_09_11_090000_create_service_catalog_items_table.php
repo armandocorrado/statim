@@ -18,7 +18,7 @@ return new class extends Migration
     {
         Schema::create('service_catalog_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
 
             $table->string('name');
             $table->text('description')->nullable();

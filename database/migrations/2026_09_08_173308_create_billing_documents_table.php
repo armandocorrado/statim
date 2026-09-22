@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('billing_documents', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
 
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('recipient_patient_id')->nullable()->constrained('patients')->restrictOnDelete();

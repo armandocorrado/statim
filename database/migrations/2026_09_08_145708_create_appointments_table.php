@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
 
             // Nullable: un appuntamento senza paziente è un blocco/indisponibilità
             // dell'operatore (pausa, ferie), non un vero appuntamento clinico.

@@ -19,7 +19,7 @@ return new class extends Migration
     {
         Schema::create('dental_treatment_plan_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
             $table->foreignUlid('treatment_plan_id')->constrained('dental_treatment_plans')->cascadeOnDelete();
             $table->foreignUlid('service_catalog_item_id')->constrained()->restrictOnDelete();
 

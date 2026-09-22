@@ -17,9 +17,12 @@ class TenantFactory extends Factory
     {
         $name = 'Studio '.fake()->unique()->lastName();
 
+        $slug = Str::slug($name).'-'.fake()->unique()->numerify('###');
+
         return [
             'name' => $name,
-            'slug' => Str::slug($name).'-'.fake()->unique()->numerify('###'),
+            'slug' => $slug,
+            'database_name' => 'medcare_tenant_'.str_replace('-', '_', $slug),
             'vat_number' => fake()->numerify('IT###########'),
             'email' => fake()->unique()->companyEmail(),
             'phone' => fake()->phoneNumber(),

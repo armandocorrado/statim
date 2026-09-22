@@ -23,7 +23,7 @@ return new class extends Migration
     {
         Schema::create('dental_document_teeth', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
             $table->foreignUlid('document_id')->constrained('dental_documents')->restrictOnDelete();
 
             // Notazione FDI/ISO 3950 — vedi FdiToothNumbers. Non FK verso

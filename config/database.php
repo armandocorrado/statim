@@ -64,6 +64,64 @@ return [
             ]) : [],
         ],
 
+        // Registro centrale multi-tenant: elenco studi + mappa email->studio.
+        // Connessione fissa (a differenza di 'tenant' sotto), ma il driver segue
+        // DB_CONNECTION per default cosi' in ambiente di test (sqlite) diventa
+        // automaticamente uno ':memory:' separato, senza toccare phpunit.xml.
+        'central' => [
+            'driver' => env('DB_CENTRAL_CONNECTION', env('DB_CONNECTION', 'sqlite')),
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_CENTRAL_DATABASE', env('DB_CONNECTION', 'sqlite') === 'sqlite' ? ':memory:' : 'medcare_central'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        // DB dello studio "corrente": connessione dinamica, nessun database di
+        // default. App\Core\Tenancy\Support\TenantConnectionResolver imposta
+        // 'database' a runtime prima di ogni uso. Un accesso prima della
+        // risoluzione deve fallire rumorosamente, non collegarsi a un DB sbagliato.
+        'tenant' => [
+            'driver' => env('DB_TENANT_CONNECTION', env('DB_CONNECTION', 'sqlite')),
+            'url' => null,
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_TENANT_DATABASE'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

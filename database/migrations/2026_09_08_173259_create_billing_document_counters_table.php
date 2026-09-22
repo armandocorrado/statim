@@ -20,7 +20,7 @@ return new class extends Migration
     {
         Schema::create('billing_document_counters', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->cascadeOnDelete();
+            $table->ulid('tenant_id')->index();
             $table->unsignedSmallInteger('year');
             $table->unsignedInteger('next_number')->default(1);
 

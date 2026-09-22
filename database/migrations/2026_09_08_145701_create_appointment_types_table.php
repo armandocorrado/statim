@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('appointment_types', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->cascadeOnDelete();
+            $table->ulid('tenant_id')->index();
 
             $table->string('name');
             $table->string('color', 7);

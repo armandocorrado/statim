@@ -16,7 +16,7 @@ return new class extends Migration
     {
         Schema::create('dental_tooth_conditions', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('operator_id')->constrained('users')->restrictOnDelete();
 

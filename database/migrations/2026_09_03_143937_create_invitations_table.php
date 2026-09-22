@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('invitations', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->cascadeOnDelete();
+            $table->ulid('tenant_id')->index();
 
             $table->string('email');
             $table->string('role');

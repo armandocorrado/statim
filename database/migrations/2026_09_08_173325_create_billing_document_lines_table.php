@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('billing_document_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('tenant_id')->constrained()->restrictOnDelete();
+            $table->ulid('tenant_id')->index();
             $table->foreignUlid('billing_document_id')->constrained()->cascadeOnDelete();
 
             $table->string('description');

@@ -11,10 +11,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'vat_number', 'email', 'phone', 'is_active'])]
+#[Fillable(['name', 'slug', 'database_name', 'vat_number', 'email', 'phone', 'is_active'])]
 class Tenant extends Model
 {
     use HasFactory, HasUlids;
+
+    /**
+     * Registro centrale, non il DB dello studio: vive sempre su 'central',
+     * mai sulla connessione dinamica 'tenant'. Le relazioni sotto restano
+     * valide perche' Eloquent esegue una query separata per relazione (nessun
+     * JOIN cross-connessione).
+     */
+    protected $connection = 'central';
 
     protected static function newFactory(): Factory
     {
