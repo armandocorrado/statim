@@ -3,7 +3,6 @@
 namespace App\Modules\Dental\Support;
 
 use App\Core\Quotes\Models\ServiceCatalogItem;
-use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Enums\DentalRecordSection;
 
 /**
@@ -32,11 +31,15 @@ class DentalServiceCatalogProvisioner
         ];
     }
 
-    public static function provisionDefaults(Tenant $tenant): void
+    /**
+     * Chiamare con la connessione 'tenant' gia' risolta sullo studio giusto
+     * (TenantConnectionResolver::forTenant()).
+     */
+    public static function provisionDefaults(): void
     {
         foreach (self::defaultItems() as $item) {
             ServiceCatalogItem::firstOrCreate(
-                ['tenant_id' => $tenant->id, 'name' => $item['name']],
+                ['name' => $item['name']],
                 [
                     'category' => $item['category'],
                     'base_price' => $item['base_price'],

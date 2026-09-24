@@ -2,23 +2,19 @@
 
 use App\Core\Agenda\Models\Appointment;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 
 test('odontoiatra sees only their own appointments in the agenda', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     $ownAppointment = Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patient->id,
         'start_at' => now()->addDay()->setTime(10, 0),
         'end_at' => now()->addDay()->setTime(10, 30),
     ]);
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $igienista->id,
         'patient_id' => $patient->id,
         'start_at' => now()->addDay()->setTime(11, 0),
@@ -43,21 +39,18 @@ test('odontoiatra sees only their own appointments in the agenda', function () {
 });
 
 test('segreteria sees every operators appointments in the agenda', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $segreteria = userWithRole('segreteria');
+    $odontoiatra = userWithRole('odontoiatra');
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patient->id,
         'start_at' => now()->addDay()->setTime(10, 0),
         'end_at' => now()->addDay()->setTime(10, 30),
     ]);
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $igienista->id,
         'patient_id' => $patient->id,
         'start_at' => now()->addDay()->setTime(11, 0),
@@ -76,11 +69,9 @@ test('segreteria sees every operators appointments in the agenda', function () {
 });
 
 test('the appointment carries enough data to open the patient sheet without a second lookup', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'first_name' => 'Mario', 'last_name' => 'Rossi']);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create(['first_name' => 'Mario', 'last_name' => 'Rossi']);
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $admin->id,
         'patient_id' => $patient->id,
         'start_at' => now()->addDay()->setTime(10, 0),
@@ -95,12 +86,9 @@ test('the appointment carries enough data to open the patient sheet without a se
     );
 });
 
-test('patient search is tenant-scoped and requires at least two characters', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $admin = userForTenant($tenantA, 'admin');
-    Patient::factory()->create(['tenant_id' => $tenantA->id, 'first_name' => 'Mario', 'last_name' => 'Rossi']);
-    Patient::factory()->create(['tenant_id' => $tenantB->id, 'first_name' => 'Mariangela', 'last_name' => 'Bruni']);
+test('patient search requires at least two characters', function () {
+    $admin = userWithRole('admin');
+    Patient::factory()->create(['first_name' => 'Mario', 'last_name' => 'Rossi']);
 
     $this->actingAs($admin)->getJson('/agenda/patients-search?q=m')
         ->assertOk()

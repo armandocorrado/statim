@@ -12,8 +12,7 @@ class DentalDiaryEntryPolicy
 {
     public function view(User $user, DentalDiaryEntry $entry): bool
     {
-        return $entry->tenant_id === $user->tenant_id
-            && ClinicalAccessChecker::canViewSection($user, $entry->section);
+        return ClinicalAccessChecker::canViewSection($user, $entry->section);
     }
 
     /**
@@ -22,7 +21,6 @@ class DentalDiaryEntryPolicy
      */
     public function createFor(User $user, Patient $patient, DentalRecordSection $section): bool
     {
-        return $patient->tenant_id === $user->tenant_id
-            && ClinicalAccessChecker::canManageSection($user, $section);
+        return ClinicalAccessChecker::canManageSection($user, $section);
     }
 }

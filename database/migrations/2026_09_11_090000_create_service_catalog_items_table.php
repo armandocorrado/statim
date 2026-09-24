@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Listino prestazioni per-tenant — profession-agnostic, come
      * AppointmentType: Core non sa cosa significhino i nomi delle voci
@@ -18,7 +20,6 @@ return new class extends Migration
     {
         Schema::create('service_catalog_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
 
             $table->string('name');
             $table->text('description')->nullable();
@@ -41,7 +42,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'is_active']);
+            $table->index('is_active');
         });
     }
 

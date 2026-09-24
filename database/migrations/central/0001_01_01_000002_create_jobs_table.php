@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
+     * Infrastruttura trasversale: il backend della coda non appartiene a
+     * nessuno studio specifico. Un job che agisce su dati di uno studio
+     * risolvera' la connessione 'tenant' da solo dentro il proprio handle().
+     */
+    protected $connection = 'central';
+
+    /**
      * Run the migrations.
      */
     public function up(): void

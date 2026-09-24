@@ -16,7 +16,6 @@ class AppointmentTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'name' => fake()->unique()->word(),
             'color' => '#2563eb',
             'is_active' => true,

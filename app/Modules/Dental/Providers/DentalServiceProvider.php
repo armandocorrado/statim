@@ -78,7 +78,6 @@ class DentalServiceProvider extends ServiceProvider
         // ciclo di vita di un singolo model (l'anamnesi potrebbe non
         // esistere ancora), quindi un Gate dedicato invece di un metodo su
         // una Policy specifica.
-        Gate::define('view-clinical-record', fn ($user, Patient $patient) => $patient->tenant_id === $user->tenant_id
-            && ClinicalAccessChecker::canView($user));
+        Gate::define('view-clinical-record', fn ($user, Patient $patient) => ClinicalAccessChecker::canView($user));
     }
 }

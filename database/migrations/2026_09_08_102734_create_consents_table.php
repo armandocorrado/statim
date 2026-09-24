@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('consents', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
 
             // Chi ha materialmente espresso il consenso, se diverso dal
@@ -28,7 +29,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'patient_id', 'purpose']);
+            $table->index(['patient_id', 'purpose']);
         });
     }
 

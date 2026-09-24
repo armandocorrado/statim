@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('billing_documents', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
 
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('recipient_patient_id')->nullable()->constrained('patients')->restrictOnDelete();
@@ -50,8 +51,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'document_year', 'document_number']);
-            $table->index(['tenant_id', 'patient_id']);
+            $table->unique(['document_year', 'document_number']);
         });
     }
 

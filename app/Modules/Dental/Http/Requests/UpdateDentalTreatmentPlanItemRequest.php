@@ -28,12 +28,10 @@ class UpdateDentalTreatmentPlanItemRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = $this->user()->tenant_id;
-
         return [
             'service_catalog_item_id' => [
                 'required', 'ulid',
-                Rule::exists('service_catalog_items', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('service_catalog_items', 'id'),
             ],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string', 'max:2000'],

@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Core\Tenancy\Models\Tenant;
 use App\Core\Users\Models\Invitation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,7 +17,6 @@ class InvitationFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'email' => fake()->safeEmail(),
             'role' => 'segreteria',
             'token_hash' => hash('sha256', Str::random(40)),

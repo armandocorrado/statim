@@ -1,35 +1,15 @@
 <?php
 
 use App\Core\Audit\Models\AuditLog;
-use App\Core\Tenancy\Models\Tenant;
-use App\Core\Users\Models\Invitation;
-use App\Core\Users\Support\TenantRoleProvisioner;
 use App\Models\User;
-use Illuminate\Support\Str;
-
-function createInvitationWithToken(Tenant $tenant, array $overrides = []): array
-{
-    TenantRoleProvisioner::provisionDefaults($tenant);
-
-    $plainTextToken = Str::random(40);
-
-    $invitation = Invitation::factory()->create(array_merge([
-        'tenant_id' => $tenant->id,
-        'email' => 'invitato@rossi.test',
-        'role' => 'segreteria',
-        'token_hash' => hash('sha256', $plainTextToken),
-        'expires_at' => now()->addDays(7),
-        'accepted_at' => null,
-    ], $overrides));
-
-    return [$invitation, $plainTextToken];
-}
 
 test('a valid invitation token creates and logs in an active user with the invited role', function () {
-    $tenant = Tenant::factory()->create();
-    [$invitation, $token] = createInvitationWithToken($tenant);
+    ['tenant' => $tenant, 'invitation' => $invitation, 'token' => $token] = provisionInvitationTestTenant([
+        'email' => 'invitato@rossi.test',
+        'role' => 'segreteria',
+    ]);
 
-    $response = $this->post("/invitations/{$token}", [
+    $response = $this->post("/invitations/{$tenant->id}/{$token}", [
         'name' => 'Mario Rossi',
         'password' => 'password123',
         'password_confirmation' => 'password123',
@@ -40,8 +20,7 @@ test('a valid invitation token creates and logs in an active user with the invit
 
     $user = User::where('email', 'invitato@rossi.test')->firstOrFail();
 
-    expect($user->tenant_id)->toBe($tenant->id)
-        ->and($user->is_active)->toBeTrue()
+    expect($user->is_active)->toBeTrue()
         ->and($user->email_verified_at)->not->toBeNull()
         ->and($user->getRoleNames()->all())->toBe(['segreteria']);
 
@@ -51,16 +30,17 @@ test('a valid invitation token creates and logs in an active user with the invit
         ->where('auditable_id', $user->id)
         ->firstOrFail();
 
-    expect($log->tenant_id)->toBe($tenant->id)
-        ->and($log->user_id)->toBeNull()
+    expect($log->user_id)->toBeNull()
         ->and($log->new_values)->toBe(['role' => ['segreteria']]);
 });
 
 test('an expired invitation token is rejected', function () {
-    $tenant = Tenant::factory()->create();
-    [, $token] = createInvitationWithToken($tenant, ['expires_at' => now()->subDay()]);
+    ['tenant' => $tenant, 'token' => $token] = provisionInvitationTestTenant([
+        'email' => 'invitato@rossi.test',
+        'expires_at' => now()->subDay(),
+    ]);
 
-    $response = $this->post("/invitations/{$token}", [
+    $response = $this->post("/invitations/{$tenant->id}/{$token}", [
         'name' => 'Mario Rossi',
         'password' => 'password123',
         'password_confirmation' => 'password123',
@@ -68,14 +48,15 @@ test('an expired invitation token is rejected', function () {
 
     $response->assertStatus(410);
     $this->assertGuest();
-    $this->assertDatabaseMissing('users', ['email' => 'invitato@rossi.test']);
 });
 
 test('an already accepted invitation token cannot be reused', function () {
-    $tenant = Tenant::factory()->create();
-    [, $token] = createInvitationWithToken($tenant, ['accepted_at' => now()]);
+    ['tenant' => $tenant, 'token' => $token] = provisionInvitationTestTenant([
+        'email' => 'invitato@rossi.test',
+        'accepted_at' => now(),
+    ]);
 
-    $response = $this->post("/invitations/{$token}", [
+    $response = $this->post("/invitations/{$tenant->id}/{$token}", [
         'name' => 'Mario Rossi',
         'password' => 'password123',
         'password_confirmation' => 'password123',

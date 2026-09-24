@@ -5,7 +5,7 @@ import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 
-export default function AcceptInvitation({ email, token }) {
+export default function AcceptInvitation({ email, tenant, token }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         password: '',
@@ -15,7 +15,7 @@ export default function AcceptInvitation({ email, token }) {
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('invitations.store', token), {
+        post(route('invitations.store', { tenant, token }), {
             onFinish: () => reset('password', 'password_confirmation'),
         });
     };

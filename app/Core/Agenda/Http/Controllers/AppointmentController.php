@@ -19,7 +19,7 @@ class AppointmentController extends Controller
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $request) {
-            $this->rejectIfOverlapping($data, $request->user()->tenant_id);
+            $this->rejectIfOverlapping($data);
 
             $appointment = new Appointment($data);
             $appointment->status = AppointmentStatus::Scheduled;
@@ -34,8 +34,8 @@ class AppointmentController extends Controller
     {
         $data = $request->validated();
 
-        DB::transaction(function () use ($data, $appointment, $request) {
-            $this->rejectIfOverlapping($data, $request->user()->tenant_id, excluding: $appointment->id);
+        DB::transaction(function () use ($data, $appointment) {
+            $this->rejectIfOverlapping($data, excluding: $appointment->id);
 
             $appointment->fill($data);
             $appointment->save();
@@ -58,10 +58,10 @@ class AppointmentController extends Controller
      * operatore in un appuntamento e assistente in un altro sovrapposto
      * passerebbe inosservata.
      */
-    private function rejectIfOverlapping(array $data, string $tenantId, ?string $excluding = null): void
+    private function rejectIfOverlapping(array $data, ?string $excluding = null): void
     {
         $operatorBusy = AppointmentOverlapChecker::personIsBusy(
-            $tenantId, $data['operator_id'], $data['start_at'], $data['end_at'],
+            $data['operator_id'], $data['start_at'], $data['end_at'],
             excludingAppointmentId: $excluding, lock: true,
         );
 
@@ -73,7 +73,7 @@ class AppointmentController extends Controller
 
         if (! empty($data['assistant_id'])) {
             $assistantBusy = AppointmentOverlapChecker::personIsBusy(
-                $tenantId, $data['assistant_id'], $data['start_at'], $data['end_at'],
+                $data['assistant_id'], $data['start_at'], $data['end_at'],
                 excludingAppointmentId: $excluding, lock: true,
             );
 

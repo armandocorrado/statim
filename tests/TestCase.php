@@ -7,11 +7,12 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 abstract class TestCase extends BaseTestCase
 {
     /**
-     * Aggiunge 'central' (registro tenant/tenant_users) alla connessione di
-     * default: senza, le righe Tenant create nei test (21 file usano
-     * Tenant::factory) non verrebbero racchiuse nello stesso rollback
-     * per-test del resto, con rischio di dati accumulati tra un test e
-     * l'altro o schema mancante dal secondo test in poi.
+     * 'central' (registro tenant/tenant_users) e 'tenant' (schema di
+     * dominio, Tappa 3: ogni model di dominio vive lì) aggiunte alla
+     * connessione di default: senza, le righe create nei test non
+     * verrebbero racchiuse nello stesso rollback per-test del resto, con
+     * rischio di dati accumulati tra un test e l'altro o schema mancante
+     * dal secondo test in poi.
      *
      * Deve essere una PROPRIETA', non un override del metodo
      * connectionsToTransact(): RefreshDatabase::connectionsToTransact()
@@ -23,5 +24,5 @@ abstract class TestCase extends BaseTestCase
      *
      * @var list<string>
      */
-    protected $connectionsToTransact = ['sqlite', 'central'];
+    protected $connectionsToTransact = ['sqlite', 'central', 'tenant'];
 }

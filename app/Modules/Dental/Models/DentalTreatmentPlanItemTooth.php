@@ -2,7 +2,7 @@
 
 namespace App\Modules\Dental\Models;
 
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use Database\Factories\DentalTreatmentPlanItemToothFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['treatment_plan_item_id', 'tooth_number'])]
 class DentalTreatmentPlanItemTooth extends Model
 {
-    use BelongsToTenant, HasFactory, HasUlids;
+    use UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

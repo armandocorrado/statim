@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Preventivo — CORE trasversale (economico/amministrativo), non
      * importa mai nulla dal verticale Dental. `source_treatment_plan_id`
@@ -20,7 +22,6 @@ return new class extends Migration
     {
         Schema::create('quotes', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
 
             $table->string('source_treatment_plan_id')->nullable();
@@ -42,8 +43,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'patient_id']);
-            $table->index(['tenant_id', 'source_treatment_plan_id']);
+            $table->index('source_treatment_plan_id');
         });
     }
 

@@ -33,14 +33,19 @@ it('lancia InactiveTenantException per un tenant non attivo, senza mutare lo sta
 });
 
 it('release() torna allo stato nessun tenant selezionato', function () {
+    $originalTenantDatabase = config('database.connections.tenant.database');
     $tenant = Tenant::factory()->create(['database_name' => ':memory:']);
 
     $resolver = app(TenantConnectionResolver::class);
     $resolver->forTenant($tenant);
     $resolver->release();
 
+    // Torna al valore ORIGINALE (di solito ':memory:' nei test), non a null
+    // a prescindere: un null hardcoded romperebbe la connessione condivisa
+    // dei test che, dopo un release(), continuano a usare 'tenant' senza
+    // aver risolto un altro Tenant reale.
     expect($resolver->current())->toBeNull()
-        ->and(config('database.connections.tenant.database'))->toBeNull();
+        ->and(config('database.connections.tenant.database'))->toBe($originalTenantDatabase);
 });
 
 it('usingTenant() ripristina il tenant precedente dopo la callback', function () {

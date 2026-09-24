@@ -6,24 +6,20 @@ use App\Core\Quotes\Enums\QuoteStatus;
 use App\Core\Quotes\Models\Quote;
 use App\Core\Quotes\Models\QuoteLine;
 use App\Core\Quotes\Models\ServiceCatalogItem;
-use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Models\DentalTreatmentPlan;
 use App\Modules\Dental\Models\DentalTreatmentPlanItem;
 
 test('segreteria can generate a quote from a treatment plan', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $item = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id, 'name' => 'Otturazione', 'base_price' => 90]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $item = ServiceCatalogItem::factory()->create(['name' => 'Otturazione', 'base_price' => 90]);
     $planItem = DentalTreatmentPlanItem::factory()->create([
-        'tenant_id' => $tenant->id,
         'treatment_plan_id' => $plan->id,
         'service_catalog_item_id' => $item->id,
         'quantity' => 1,
     ]);
     \App\Modules\Dental\Models\DentalTreatmentPlanItemTooth::factory()->create([
-        'tenant_id' => $tenant->id,
         'treatment_plan_item_id' => $planItem->id,
         'tooth_number' => '16',
     ]);
@@ -42,30 +38,27 @@ test('segreteria can generate a quote from a treatment plan', function () {
 });
 
 test('odontoiatra cannot generate a quote (administrative action)', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/generate-quote")
         ->assertForbidden();
 });
 
 test('aso cannot see quotes at all', function () {
-    $tenant = Tenant::factory()->create();
-    $aso = userForTenant($tenant, 'aso');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $aso = userWithRole('aso');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($aso)->get('/quotes')->assertForbidden();
     $this->actingAs($aso)->get("/quotes/{$quote->id}")->assertForbidden();
 });
 
 test('odontoiatra can view but not edit a quote', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($odontoiatra)->get("/quotes/{$quote->id}")
         ->assertOk()
@@ -76,10 +69,9 @@ test('odontoiatra can view but not edit a quote', function () {
 });
 
 test('segreteria can update draft quote lines and totals are computed on issue with discount and vat', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->put("/quotes/{$quote->id}", [
         'lines' => [
@@ -101,20 +93,18 @@ test('segreteria can update draft quote lines and totals are computed on issue w
 });
 
 test('a draft quote cannot skip straight to accepted', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->patch("/quotes/{$quote->id}/status", ['status' => 'accepted'])
         ->assertForbidden();
 });
 
 test('an issued quote can be accepted, recording the response date', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->issued()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->issued()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->patch("/quotes/{$quote->id}/status", ['status' => 'accepted'])
         ->assertSessionHasNoErrors();
@@ -125,10 +115,9 @@ test('an issued quote can be accepted, recording the response date', function ()
 });
 
 test('an accepted quote cannot jump directly to completed, must pass through in_progress', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->accepted()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->patch("/quotes/{$quote->id}/status", ['status' => 'completed'])
         ->assertInvalid(['status']);
@@ -139,24 +128,22 @@ test('an accepted quote cannot jump directly to completed, must pass through in_
 });
 
 test('a rejected quote is terminal, no further transitions allowed', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->rejected()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->rejected()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->patch("/quotes/{$quote->id}/status", ['status' => 'in_progress'])
         ->assertInvalid(['status']);
 });
 
 test('acceptance rate counts accepted+in_progress+completed over every non-draft quote', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
 
-    Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]); // draft, excluded
-    Quote::factory()->issued()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]); // issued, not yet responded
-    Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    Quote::factory()->rejected()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    Quote::factory()->create(['patient_id' => $patient->id]); // draft, excluded
+    Quote::factory()->issued()->create(['patient_id' => $patient->id]); // issued, not yet responded
+    Quote::factory()->accepted()->create(['patient_id' => $patient->id]);
+    Quote::factory()->rejected()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->get('/quotes')
         ->assertInertia(fn ($page) => $page
@@ -166,23 +153,11 @@ test('acceptance rate counts accepted+in_progress+completed over every non-draft
         );
 });
 
-test('a quote cannot be viewed across tenants', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $segreteriaA = userForTenant($tenantA, 'segreteria');
-    $patientB = Patient::factory()->create(['tenant_id' => $tenantB->id]);
-    $quoteB = Quote::factory()->create(['tenant_id' => $tenantB->id, 'patient_id' => $patientB->id]);
-
-    $this->actingAs($segreteriaA)->get("/quotes/{$quoteB->id}")->assertForbidden();
-});
-
 test('segreteria can generate a billing document from an accepted quote, discount frozen into the unit price', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'first_name' => 'Mario', 'last_name' => 'Rossi']);
-    $quote = Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create(['first_name' => 'Mario', 'last_name' => 'Rossi']);
+    $quote = Quote::factory()->accepted()->create(['patient_id' => $patient->id]);
     QuoteLine::factory()->create([
-        'tenant_id' => $tenant->id,
         'quote_id' => $quote->id,
         'description' => 'Otturazione',
         'quantity' => 2,
@@ -213,11 +188,10 @@ test('segreteria can generate a billing document from an accepted quote, discoun
 });
 
 test('a quote can generate more than one billing document over time', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->completed()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    QuoteLine::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->completed()->create(['patient_id' => $patient->id]);
+    QuoteLine::factory()->create(['quote_id' => $quote->id]);
 
     $this->actingAs($segreteria)->post("/quotes/{$quote->id}/generate-billing-document")->assertSessionHasNoErrors();
     $this->actingAs($segreteria)->post("/quotes/{$quote->id}/generate-billing-document")->assertSessionHasNoErrors();
@@ -226,11 +200,10 @@ test('a quote can generate more than one billing document over time', function (
 });
 
 test('a billing document cannot be generated from a draft or rejected quote', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $draft = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $rejected = Quote::factory()->rejected()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $draft = Quote::factory()->create(['patient_id' => $patient->id]);
+    $rejected = Quote::factory()->rejected()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->post("/quotes/{$draft->id}/generate-billing-document")->assertForbidden();
     $this->actingAs($segreteria)->post("/quotes/{$rejected->id}/generate-billing-document")->assertForbidden();
@@ -239,29 +212,17 @@ test('a billing document cannot be generated from a draft or rejected quote', fu
 });
 
 test('odontoiatra cannot generate a billing document even from an accepted quote', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    QuoteLine::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->accepted()->create(['patient_id' => $patient->id]);
+    QuoteLine::factory()->create(['quote_id' => $quote->id]);
 
     $this->actingAs($odontoiatra)->post("/quotes/{$quote->id}/generate-billing-document")->assertForbidden();
 });
 
-test('a billing document cannot be generated from another tenant quote', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $segreteriaA = userForTenant($tenantA, 'segreteria');
-    $patientB = Patient::factory()->create(['tenant_id' => $tenantB->id]);
-    $quoteB = Quote::factory()->accepted()->create(['tenant_id' => $tenantB->id, 'patient_id' => $patientB->id]);
-
-    $this->actingAs($segreteriaA)->post("/quotes/{$quoteB->id}/generate-billing-document")->assertForbidden();
-});
-
 test('numbering continues seamlessly between manually created documents and ones generated from a quote', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($admin)->post('/billing', [
         'patient_id' => $patient->id,
@@ -270,8 +231,8 @@ test('numbering continues seamlessly between manually created documents and ones
     $manualDocument = BillingDocument::where('patient_id', $patient->id)->firstOrFail();
     $this->actingAs($admin)->patch("/billing/{$manualDocument->id}/issue");
 
-    $quote = Quote::factory()->accepted()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    QuoteLine::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id]);
+    $quote = Quote::factory()->accepted()->create(['patient_id' => $patient->id]);
+    QuoteLine::factory()->create(['quote_id' => $quote->id]);
     $this->actingAs($admin)->post("/quotes/{$quote->id}/generate-billing-document");
     $generatedDocument = BillingDocument::where('source_quote_id', $quote->id)->firstOrFail();
     $this->actingAs($admin)->patch("/billing/{$generatedDocument->id}/issue");

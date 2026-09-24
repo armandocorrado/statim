@@ -28,7 +28,6 @@ class AgendaController extends Controller
         $operatorId = $request->string('operator_id')->toString() ?: null;
 
         $operators = User::query()
-            ->where('tenant_id', $user->tenant_id)
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name'])

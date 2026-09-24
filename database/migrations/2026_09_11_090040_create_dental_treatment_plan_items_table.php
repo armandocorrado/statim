@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * A differenza del resto della cartella clinica (diario, documenti,
      * stati dentali), le voci del piano di cura NON sono append-only: un
@@ -19,7 +21,6 @@ return new class extends Migration
     {
         Schema::create('dental_treatment_plan_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('treatment_plan_id')->constrained('dental_treatment_plans')->cascadeOnDelete();
             $table->foreignUlid('service_catalog_item_id')->constrained()->restrictOnDelete();
 
@@ -32,8 +33,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('sort_order')->default(0);
 
             $table->timestamps();
-
-            $table->index(['tenant_id', 'treatment_plan_id']);
         });
     }
 

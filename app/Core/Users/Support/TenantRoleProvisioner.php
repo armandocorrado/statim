@@ -2,20 +2,19 @@
 
 namespace App\Core\Users\Support;
 
-use App\Core\Tenancy\Models\Tenant;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
+use App\Core\Users\Models\Permission;
+use App\Core\Users\Models\Role;
 
 /**
  * Provisions the FIXED role/permission catalog for a tenant.
  *
- * Permissions are global (spatie/laravel-permission does not team-scope the
- * `permissions` table), roles are per-tenant (the "teams" feature scopes
- * `roles` by tenant_id). Roles are fixed by design (GDPR data minimization /
- * protection by design): the studio Admin assigns these predefined roles to
- * users, but nothing in the app lets a tenant edit a role's permissions —
- * this class is the single source of truth for the catalog.
+ * Roles and permissions both live in the tenant's own database now (no more
+ * spatie "teams"/tenant_id scoping — each studio has its own physical DB,
+ * so a plain Role/Permission catalog is already correctly isolated). Roles
+ * are fixed by design (GDPR data minimization / protection by design): the
+ * studio Admin assigns these predefined roles to users, but nothing in the
+ * app lets a tenant edit a role's permissions — this class is the single
+ * source of truth for the catalog.
  *
  * Clinical roles (odontoiatra, igienista) and clinical-data permissions
  * belong to the dental vertical, not here — they're grafted on via extend(),
@@ -77,23 +76,20 @@ class TenantRoleProvisioner
         return $roles;
     }
 
-    public static function provisionDefaults(Tenant $tenant): void
+    /**
+     * Chiamare con la connessione 'tenant' gia' risolta sullo studio giusto
+     * (TenantConnectionResolver::forTenant()) - il catalogo finisce nel DB
+     * di quello studio per il solo fatto di essere la connessione attiva.
+     */
+    public static function provisionDefaults(): void
     {
         foreach (array_merge(...array_values(self::defaultRolePermissions())) as $permission) {
             Permission::findOrCreate($permission, 'web');
         }
 
-        $registrar = app(PermissionRegistrar::class);
-        $previousTeamId = $registrar->getPermissionsTeamId();
-        $registrar->setPermissionsTeamId($tenant->id);
-
-        try {
-            foreach (self::defaultRolePermissions() as $roleName => $permissions) {
-                $role = Role::findOrCreate($roleName, 'web');
-                $role->syncPermissions($permissions);
-            }
-        } finally {
-            $registrar->setPermissionsTeamId($previousTeamId);
+        foreach (self::defaultRolePermissions() as $roleName => $permissions) {
+            $role = Role::findOrCreate($roleName, 'web');
+            $role->syncPermissions($permissions);
         }
     }
 }

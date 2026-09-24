@@ -17,7 +17,6 @@ class DentalTreatmentPlanItemToothFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'treatment_plan_item_id' => DentalTreatmentPlanItem::factory(),
             'tooth_number' => '16',
         ];

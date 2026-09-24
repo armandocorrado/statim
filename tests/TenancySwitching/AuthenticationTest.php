@@ -1,6 +1,9 @@
 <?php
 
+use App\Core\Tenancy\Models\Tenant;
+use App\Core\Tenancy\Support\TenantConnectionResolver;
 use App\Models\User;
+use Illuminate\Support\Facades\Artisan;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('login screen can be rendered', function () {
@@ -119,9 +122,26 @@ test('users can logout', function () {
 });
 
 test('a plain user factory create without tenant_users mapping cannot log in at all', function () {
+    // Studio reale (file sqlite dedicato, non ':memory:' condiviso — questa
+    // TestCase esclude 'tenant' dal rollback automatico apposta, vedi
+    // TenancySwitchingTestCase) con un utente creato, ma SENZA la riga
+    // tenant_users corrispondente: deve restare irraggiungibile dal login.
+    $path = sys_get_temp_dir().'/medcare_test_'.bin2hex(random_bytes(8)).'.sqlite';
+    touch($path);
+
+    $tenant = Tenant::factory()->create(['database_name' => $path]);
+
+    $resolver = app(TenantConnectionResolver::class);
+    $resolver->forTenant($tenant);
+    Artisan::call('migrate', ['--database' => 'tenant', '--path' => 'database/migrations', '--force' => true]);
+
     $user = User::factory()->create();
+
+    $resolver->release();
 
     $response = $this->post(route('login.identify'), ['email' => $user->email]);
 
     $response->assertInvalid(['email']);
+
+    unlink($path);
 });

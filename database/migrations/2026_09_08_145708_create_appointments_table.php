@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
 
             // Nullable: un appuntamento senza paziente è un blocco/indisponibilità
             // dell'operatore (pausa, ferie), non un vero appuntamento clinico.
@@ -34,8 +35,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'operator_id', 'start_at']);
-            $table->index(['tenant_id', 'patient_id']);
+            $table->index(['operator_id', 'start_at']);
         });
     }
 

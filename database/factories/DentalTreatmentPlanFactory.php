@@ -18,7 +18,6 @@ class DentalTreatmentPlanFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'patient_id' => Patient::factory(),
             'created_by' => User::factory(),
             'title' => 'Piano conservativo',

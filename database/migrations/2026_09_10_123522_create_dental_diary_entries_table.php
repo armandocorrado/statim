@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Append-only: nessuna colonna updated_at usata a scopo applicativo,
      * nessuna rotta di update/delete sul model — una nota di seduta non si
@@ -16,7 +18,6 @@ return new class extends Migration
     {
         Schema::create('dental_diary_entries', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('operator_id')->constrained('users')->restrictOnDelete();
 
@@ -26,7 +27,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'patient_id', 'section']);
+            $table->index(['patient_id', 'section']);
         });
     }
 

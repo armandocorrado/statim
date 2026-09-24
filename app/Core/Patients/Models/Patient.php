@@ -5,7 +5,7 @@ namespace App\Core\Patients\Models;
 use App\Core\Audit\Concerns\Auditable;
 use App\Core\Consents\Models\Consent;
 use App\Core\Patients\Enums\PatientSource;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use Database\Factories\PatientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,7 +28,7 @@ use Illuminate\Notifications\Notifiable;
 ])]
 class Patient extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids, Notifiable, SoftDeletes;
+    use Auditable, UsesTenantConnection, HasFactory, HasUlids, Notifiable, SoftDeletes;
 
     protected static function newFactory(): Factory
     {

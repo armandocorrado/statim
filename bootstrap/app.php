@@ -1,6 +1,5 @@
 <?php
 
-use App\Core\Tenancy\Console\Commands\BackfillLegacyTenantUsersCommand;
 use App\Core\Tenancy\Console\Commands\SeedTestStudioCommand;
 use App\Core\Tenancy\Console\Commands\VerifyTenantConnectionCommand;
 use Illuminate\Foundation\Application;
@@ -17,7 +16,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         VerifyTenantConnectionCommand::class,
         SeedTestStudioCommand::class,
-        BackfillLegacyTenantUsersCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         // Gruppo 'web' esplicito (non append/prepend): RestoreTenantConnection
@@ -38,10 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
-
-        $middleware->alias([
-            'tenant' => \App\Core\Tenancy\Middleware\IdentifyTenant::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

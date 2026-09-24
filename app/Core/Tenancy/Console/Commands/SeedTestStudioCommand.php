@@ -6,14 +6,13 @@ use App\Core\Agenda\Support\AppointmentTypeProvisioner;
 use App\Core\Tenancy\Models\Tenant;
 use App\Core\Tenancy\Models\TenantUser;
 use App\Core\Tenancy\Support\TenantConnectionResolver;
+use App\Core\Tenancy\Support\TenantDatabaseCreator;
 use App\Core\Users\Support\TenantRoleProvisioner;
 use App\Models\User;
 use App\Modules\Dental\Support\DentalServiceCatalogProvisioner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Provisioning throwaway per testare il login a due step (Tappa 2): crea un
@@ -36,14 +35,14 @@ class SeedTestStudioCommand extends Command
     public function handle(TenantConnectionResolver $resolver): int
     {
         $slug = $this->argument('slug');
-        $databaseName = 'medcare_tenant_'.str_replace('-', '_', $slug);
+        $databaseName = TenantDatabaseCreator::nameFor($slug);
 
         $tenant = Tenant::query()->updateOrCreate(
             ['slug' => $slug],
             ['name' => $this->argument('name'), 'database_name' => $databaseName, 'is_active' => true],
         );
 
-        DB::connection('central')->statement("CREATE DATABASE IF NOT EXISTS `{$databaseName}`");
+        TenantDatabaseCreator::ensureExists($databaseName);
 
         $resolver->forTenant($tenant);
 
@@ -53,23 +52,20 @@ class SeedTestStudioCommand extends Command
             '--force' => true,
         ]) === 0);
 
-        TenantRoleProvisioner::provisionDefaults($tenant);
-        AppointmentTypeProvisioner::provisionDefaults($tenant);
-        DentalServiceCatalogProvisioner::provisionDefaults($tenant);
+        TenantRoleProvisioner::provisionDefaults();
+        AppointmentTypeProvisioner::provisionDefaults();
+        DentalServiceCatalogProvisioner::provisionDefaults();
 
         $email = $this->argument('email');
         $user = User::query()->updateOrCreate(
             ['email' => $email],
             [
-                'tenant_id' => $tenant->id,
                 'name' => 'Admin di prova',
                 'password' => Hash::make($this->option('password')),
                 'is_active' => true,
             ],
         );
 
-        $registrar = app(PermissionRegistrar::class);
-        $registrar->setPermissionsTeamId($tenant->id);
         $user->syncRoles(['admin']);
 
         TenantUser::query()->updateOrCreate(

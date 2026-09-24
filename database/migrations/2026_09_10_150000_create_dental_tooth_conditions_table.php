@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Append-only, come dental_diary_entries: uno stato dentale non si
      * corregge, si registra un nuovo evento. Lo stato "corrente" di un
@@ -16,7 +18,6 @@ return new class extends Migration
     {
         Schema::create('dental_tooth_conditions', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('operator_id')->constrained('users')->restrictOnDelete();
 
@@ -42,7 +43,7 @@ return new class extends Migration
             // Copre sia il filtro per paziente sia la risoluzione dello
             // stato corrente per dente (ORDER BY recorded_date/id su
             // questo stesso set di colonne).
-            $table->index(['tenant_id', 'patient_id', 'tooth_number']);
+            $table->index(['patient_id', 'tooth_number']);
         });
     }
 

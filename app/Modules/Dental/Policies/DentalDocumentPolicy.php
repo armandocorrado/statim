@@ -12,13 +12,11 @@ class DentalDocumentPolicy
 {
     public function view(User $user, DentalDocument $document): bool
     {
-        return $document->tenant_id === $user->tenant_id
-            && ClinicalAccessChecker::canViewSection($user, $document->section);
+        return ClinicalAccessChecker::canViewSection($user, $document->section);
     }
 
     public function createFor(User $user, Patient $patient, DentalRecordSection $section): bool
     {
-        return $patient->tenant_id === $user->tenant_id
-            && ClinicalAccessChecker::canManageSection($user, $section);
+        return ClinicalAccessChecker::canManageSection($user, $section);
     }
 }

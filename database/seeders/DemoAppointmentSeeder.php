@@ -6,20 +6,19 @@ use App\Core\Agenda\Enums\AppointmentStatus;
 use App\Core\Agenda\Models\Appointment;
 use App\Core\Agenda\Models\AppointmentType;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Popola l'agenda degli odontoiatri demo con qualche appuntamento — senza
  * dati, le viste multi-operatore dell'Agenda sono vuote e non dicono
- * niente in demo. Solo odontoiatri ("i dottori"): igienisti restano senza
- * appuntamenti propri in questa passata. Ogni appuntamento viene anche
- * legato all'ASO "corrispondente" (assistant_id) — stesso abbinamento
- * elencato in DemoTeamSeeder — così l'agenda dell'assistente mostra
- * davvero gli appuntamenti del proprio odontoiatra, non solo per
- * convenzione nell'elenco utenti.
+ * niente in demo. Opera sullo studio la cui connessione 'tenant' è già
+ * risolta dal chiamante (DatabaseSeeder). Solo odontoiatri ("i dottori"):
+ * igienisti restano senza appuntamenti propri in questa passata. Ogni
+ * appuntamento viene anche legato all'ASO "corrispondente" (assistant_id)
+ * — stesso abbinamento elencato in DemoTeamSeeder — così l'agenda
+ * dell'assistente mostra davvero gli appuntamenti del proprio odontoiatra,
+ * non solo per convenzione nell'elenco utenti.
  */
 class DemoAppointmentSeeder extends Seeder
 {
@@ -56,24 +55,10 @@ class DemoAppointmentSeeder extends Seeder
 
     public function run(): void
     {
-        $this->seedForTenant('studio-rossi');
-        $this->seedForTenant('studio-bianchi');
-    }
-
-    private function seedForTenant(string $slug): void
-    {
-        $tenant = Tenant::where('slug', $slug)->first();
-
-        if (! $tenant) {
-            return;
-        }
-
-        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-
-        $admin = User::where('tenant_id', $tenant->id)->role('admin')->first();
-        $odontoiatri = User::where('tenant_id', $tenant->id)->role('odontoiatra')->orderBy('name')->get();
-        $patients = Patient::where('tenant_id', $tenant->id)->get();
-        $types = AppointmentType::where('tenant_id', $tenant->id)->get();
+        $admin = User::role('admin')->first();
+        $odontoiatri = User::role('odontoiatra')->orderBy('name')->get();
+        $patients = Patient::all();
+        $types = AppointmentType::all();
 
         if (! $admin || $odontoiatri->isEmpty() || $patients->isEmpty()) {
             return;
@@ -98,7 +83,7 @@ class DemoAppointmentSeeder extends Seeder
                 $start = now()->startOfDay()->addDays($slot['day_offset'])
                     ->setTime($slot['hour'], $slot['minute']);
 
-                // tenant_id/created_by/status non sono mass-assignable
+                // created_by/status non sono mass-assignable
                 // (Appointment::$fillable li esclude apposta — un form web
                 // non deve poterli impostare): stesso pattern di
                 // AppointmentController::store(), non Appointment::create().
@@ -110,7 +95,6 @@ class DemoAppointmentSeeder extends Seeder
                     'start_at' => $start,
                     'end_at' => (clone $start)->addMinutes(30),
                 ]);
-                $appointment->tenant_id = $tenant->id;
                 $appointment->status = $index === 0 ? AppointmentStatus::Confirmed : AppointmentStatus::Scheduled;
                 $appointment->created_by = $admin->id;
                 $appointment->save();

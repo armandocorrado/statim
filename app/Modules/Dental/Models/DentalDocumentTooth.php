@@ -2,7 +2,7 @@
 
 namespace App\Modules\Dental\Models;
 
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use Database\Factories\DentalDocumentToothFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['document_id', 'tooth_number'])]
 class DentalDocumentTooth extends Model
 {
-    use BelongsToTenant, HasFactory, HasUlids;
+    use UsesTenantConnection, HasFactory, HasUlids;
 
     const UPDATED_AT = null;
 

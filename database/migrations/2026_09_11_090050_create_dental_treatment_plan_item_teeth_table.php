@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Stesso pattern esatto di dental_document_teeth: il "dente" non è
      * mai una riga di una tabella propria, solo un codice FDI — quindi
@@ -20,7 +22,6 @@ return new class extends Migration
     {
         Schema::create('dental_treatment_plan_item_teeth', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('treatment_plan_item_id')->constrained('dental_treatment_plan_items')->cascadeOnDelete();
 
             $table->string('tooth_number', 2);
@@ -30,7 +31,7 @@ return new class extends Migration
             // Nome esplicito: quello auto-generato da Laravel supera il
             // limite di 64 caratteri di MySQL per gli identificatori.
             $table->unique(['treatment_plan_item_id', 'tooth_number'], 'dental_tp_item_teeth_item_tooth_unique');
-            $table->index(['tenant_id', 'tooth_number']);
+            $table->index('tooth_number');
         });
     }
 

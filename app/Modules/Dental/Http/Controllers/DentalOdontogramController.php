@@ -83,7 +83,6 @@ class DentalOdontogramController extends Controller
     {
         $condition = new DentalToothCondition($request->validated());
         $condition->patient_id = $patient->id;
-        $condition->tenant_id = $patient->tenant_id;
         $condition->operator_id = $request->user()->id;
         $condition->save();
 

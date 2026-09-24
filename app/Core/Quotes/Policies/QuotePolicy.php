@@ -13,10 +13,7 @@ use App\Models\User;
  *    admin/segreteria) OPPURE treatment_plans.prices.edit, un permesso
  *    concesso DIRETTAMENTE al singolo utente dall'admin studio (mai a un
  *    ruolo — vedi UserController::updateQuotePricePermission()), sopra
- *    il ruolo fisso odontoiatra/igienista. Usa lo stesso meccanismo team
- *    -scoped di spatie/laravel-permission già usato per i ruoli
- *    (model_has_permissions ha la stessa colonna tenant_id di
- *    model_has_roles), nessuna migration nuova.
+ *    il ruolo fisso odontoiatra/igienista.
  * 3. Emissione/gestione (issue, transizioni di stato) — SOLO
  *    treatment_plans.administer, mai treatment_plans.prices.edit.
  *
@@ -42,28 +39,23 @@ class QuotePolicy
 
     public function view(User $user, Quote $quote): bool
     {
-        return $quote->tenant_id === $user->tenant_id && $user->can('treatment_plans.view');
+        return $user->can('treatment_plans.view');
     }
 
     public function update(User $user, Quote $quote): bool
     {
-        return $quote->tenant_id === $user->tenant_id
-            && $quote->isDraft()
+        return $quote->isDraft()
             && ($user->can('treatment_plans.administer') || $user->can(self::PRICES_EDIT_PERMISSION));
     }
 
     public function issue(User $user, Quote $quote): bool
     {
-        return $quote->tenant_id === $user->tenant_id
-            && $quote->isDraft()
-            && $user->can('treatment_plans.administer');
+        return $quote->isDraft() && $user->can('treatment_plans.administer');
     }
 
     public function delete(User $user, Quote $quote): bool
     {
-        return $quote->tenant_id === $user->tenant_id
-            && $quote->isDraft()
-            && $user->can('treatment_plans.administer');
+        return $quote->isDraft() && $user->can('treatment_plans.administer');
     }
 
     /**
@@ -73,9 +65,7 @@ class QuotePolicy
      */
     public function transition(User $user, Quote $quote): bool
     {
-        return $quote->tenant_id === $user->tenant_id
-            && $user->can('treatment_plans.administer')
-            && ! $quote->isDraft();
+        return $user->can('treatment_plans.administer') && ! $quote->isDraft();
     }
 
     /**
@@ -87,8 +77,6 @@ class QuotePolicy
      */
     public function generateBillingDocument(User $user, Quote $quote): bool
     {
-        return $quote->tenant_id === $user->tenant_id
-            && $user->can('billing.manage')
-            && $quote->isEligibleForBillingDocument();
+        return $user->can('billing.manage') && $quote->isEligibleForBillingDocument();
     }
 }

@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Il piano di cura NON ha uno stato proprio (a differenza del
      * preventivo che genera): è un contenitore di lavoro clinico, non un
@@ -17,7 +19,6 @@ return new class extends Migration
     {
         Schema::create('dental_treatment_plans', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('created_by')->constrained('users')->restrictOnDelete();
 
@@ -25,8 +26,6 @@ return new class extends Migration
             $table->text('notes')->nullable();
 
             $table->timestamps();
-
-            $table->index(['tenant_id', 'patient_id']);
         });
     }
 

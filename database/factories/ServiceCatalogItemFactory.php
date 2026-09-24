@@ -16,7 +16,6 @@ class ServiceCatalogItemFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'name' => 'Otturazione',
             'description' => null,
             'category' => 'general',

@@ -7,7 +7,7 @@ use App\Core\Billing\Enums\BillingDocumentStatus;
 use App\Core\Billing\Enums\FiscalChannel;
 use App\Core\Patients\Models\Patient;
 use App\Core\Quotes\Models\Quote;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use Database\Factories\BillingDocumentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -42,7 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class BillingDocument extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids;
+    use Auditable, UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

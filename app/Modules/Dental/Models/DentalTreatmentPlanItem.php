@@ -4,7 +4,7 @@ namespace App\Modules\Dental\Models;
 
 use App\Core\Quotes\Models\QuoteLine;
 use App\Core\Quotes\Models\ServiceCatalogItem;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use Database\Factories\DentalTreatmentPlanItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['treatment_plan_id', 'service_catalog_item_id', 'quantity', 'notes', 'session_group', 'sort_order'])]
 class DentalTreatmentPlanItem extends Model
 {
-    use BelongsToTenant, HasFactory, HasUlids;
+    use UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

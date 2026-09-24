@@ -1,8 +1,8 @@
 <?php
 
+use App\Core\Users\Models\Permission;
+use App\Core\Users\Models\Role;
 use Spatie\Permission\DefaultTeamResolver;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 return [
 
@@ -148,7 +148,10 @@ return [
      * (view the latest version of this package's migration file)
      */
 
-    'teams' => true,
+    // Disattivate in Tappa 3: i permessi vivono gia' nel DB del singolo
+    // studio (un database per tenant), non serve piu' separarli per
+    // tenant_id dentro un unico DB condiviso.
+    'teams' => false,
 
     /*
      * The class to use to resolve the permissions team id

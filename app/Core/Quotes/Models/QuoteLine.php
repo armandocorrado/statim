@@ -2,7 +2,7 @@
 
 namespace App\Core\Quotes\Models;
 
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use Database\Factories\QuoteLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class QuoteLine extends Model
 {
-    use BelongsToTenant, HasFactory, HasUlids;
+    use UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

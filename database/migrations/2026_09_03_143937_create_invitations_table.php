@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('invitations', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
 
             $table->string('email');
             $table->string('role');
@@ -21,7 +22,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'email']);
+            $table->index('email');
         });
     }
 

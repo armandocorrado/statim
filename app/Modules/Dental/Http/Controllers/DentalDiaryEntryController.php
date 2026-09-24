@@ -14,7 +14,6 @@ class DentalDiaryEntryController extends Controller
     {
         $entry = new DentalDiaryEntry($request->validated());
         $entry->patient_id = $patient->id;
-        $entry->tenant_id = $patient->tenant_id;
         $entry->operator_id = $request->user()->id;
         $entry->save();
 

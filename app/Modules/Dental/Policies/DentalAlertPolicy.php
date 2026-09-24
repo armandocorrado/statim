@@ -11,16 +11,16 @@ class DentalAlertPolicy
 {
     public function view(User $user, DentalAlert $alert): bool
     {
-        return $alert->tenant_id === $user->tenant_id && ClinicalAccessChecker::canView($user);
+        return ClinicalAccessChecker::canView($user);
     }
 
     public function update(User $user, DentalAlert $alert): bool
     {
-        return $alert->tenant_id === $user->tenant_id && ClinicalAccessChecker::canManage($user);
+        return ClinicalAccessChecker::canManage($user);
     }
 
     public function createFor(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && ClinicalAccessChecker::canManage($user);
+        return ClinicalAccessChecker::canManage($user);
     }
 }

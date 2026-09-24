@@ -6,7 +6,7 @@ use App\Core\Audit\Concerns\Auditable;
 use App\Core\Billing\Models\BillingDocument;
 use App\Core\Patients\Models\Patient;
 use App\Core\Quotes\Enums\QuoteStatus;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use Database\Factories\QuoteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['patient_id', 'source_treatment_plan_id'])]
 class Quote extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids;
+    use Auditable, UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

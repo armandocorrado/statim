@@ -2,14 +2,12 @@
 
 use App\Core\Patients\Models\Patient;
 use App\Core\Quotes\Models\ServiceCatalogItem;
-use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Models\DentalTreatmentPlan;
 use App\Modules\Dental\Models\DentalTreatmentPlanItem;
 
 test('odontoiatra can create a treatment plan and view it', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/treatment-plans", [
         'title' => 'Piano conservativo',
@@ -28,10 +26,9 @@ test('odontoiatra can create a treatment plan and view it', function () {
 });
 
 test('igienista can view a treatment plan but with hygiene-only manage flag', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($igienista)->get("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}")
         ->assertOk()
@@ -42,10 +39,9 @@ test('igienista can view a treatment plan but with hygiene-only manage flag', fu
 });
 
 test('segreteria can view a treatment plan but cannot manage its clinical content', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($segreteria)->get("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}")
         ->assertOk()
@@ -54,17 +50,16 @@ test('segreteria can view a treatment plan but cannot manage its clinical conten
             ->where('canGenerateQuote', true)
         );
 
-    $item = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id, 'category' => 'general']);
+    $item = ServiceCatalogItem::factory()->create(['category' => 'general']);
     $this->actingAs($segreteria)->post("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items", [
         'service_catalog_item_id' => $item->id, 'quantity' => 1, 'teeth' => ['16'],
     ])->assertForbidden();
 });
 
 test('aso cannot access a treatment plan at all', function () {
-    $tenant = Tenant::factory()->create();
-    $aso = userForTenant($tenant, 'aso');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $aso = userWithRole('aso');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($aso)->get("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}")
         ->assertForbidden();
@@ -73,11 +68,10 @@ test('aso cannot access a treatment plan at all', function () {
 });
 
 test('odontoiatra can add a general-category item with teeth to the plan', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $item = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id, 'category' => 'general']);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $item = ServiceCatalogItem::factory()->create(['category' => 'general']);
 
     $response = $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items", [
         'service_catalog_item_id' => $item->id, 'quantity' => 1, 'teeth' => ['16', '17'], 'notes' => 'Carie profonda',
@@ -90,12 +84,11 @@ test('odontoiatra can add a general-category item with teeth to the plan', funct
 });
 
 test('igienista can add a hygiene-category item but not a general-category one', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $hygieneItem = ServiceCatalogItem::factory()->hygiene()->create(['tenant_id' => $tenant->id]);
-    $generalItem = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id, 'category' => 'general']);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $hygieneItem = ServiceCatalogItem::factory()->hygiene()->create();
+    $generalItem = ServiceCatalogItem::factory()->create(['category' => 'general']);
 
     $this->actingAs($igienista)->post("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items", [
         'service_catalog_item_id' => $hygieneItem->id, 'quantity' => 1,
@@ -111,11 +104,10 @@ test('igienista can add a hygiene-category item but not a general-category one',
 });
 
 test('an invalid tooth number is rejected on a treatment plan item', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $item = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $item = ServiceCatalogItem::factory()->create();
 
     $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items", [
         'service_catalog_item_id' => $item->id, 'quantity' => 1, 'teeth' => ['99'],
@@ -123,13 +115,12 @@ test('an invalid tooth number is rejected on a treatment plan item', function ()
 });
 
 test('editing one item does not touch the others', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $itemA = DentalTreatmentPlanItem::factory()->create(['tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id, 'quantity' => 1]);
-    $itemB = DentalTreatmentPlanItem::factory()->create(['tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id, 'quantity' => 1]);
-    $newCatalogItem = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $itemA = DentalTreatmentPlanItem::factory()->create(['treatment_plan_id' => $plan->id, 'quantity' => 1]);
+    $itemB = DentalTreatmentPlanItem::factory()->create(['treatment_plan_id' => $plan->id, 'quantity' => 1]);
+    $newCatalogItem = ServiceCatalogItem::factory()->create();
 
     $this->actingAs($odontoiatra)->put("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items/{$itemA->id}", [
         'service_catalog_item_id' => $newCatalogItem->id, 'quantity' => 3, 'teeth' => ['26'],
@@ -143,12 +134,11 @@ test('editing one item does not touch the others', function () {
 });
 
 test('deleting one item does not touch the others', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $itemA = DentalTreatmentPlanItem::factory()->create(['tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id]);
-    $itemB = DentalTreatmentPlanItem::factory()->create(['tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $itemA = DentalTreatmentPlanItem::factory()->create(['treatment_plan_id' => $plan->id]);
+    $itemB = DentalTreatmentPlanItem::factory()->create(['treatment_plan_id' => $plan->id]);
 
     $this->actingAs($odontoiatra)->delete("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items/{$itemA->id}")
         ->assertSessionHasNoErrors();
@@ -157,13 +147,12 @@ test('deleting one item does not touch the others', function () {
 });
 
 test('deleting an item also removes its linked teeth', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $item = DentalTreatmentPlanItem::factory()->create(['tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $item = DentalTreatmentPlanItem::factory()->create(['treatment_plan_id' => $plan->id]);
     \App\Modules\Dental\Models\DentalTreatmentPlanItemTooth::factory()->create([
-        'tenant_id' => $tenant->id, 'treatment_plan_item_id' => $item->id,
+        'treatment_plan_item_id' => $item->id,
     ]);
 
     $this->actingAs($odontoiatra)->delete("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items/{$item->id}");
@@ -172,13 +161,12 @@ test('deleting an item also removes its linked teeth', function () {
 });
 
 test('igienista cannot delete a general-category item even though they can view the plan', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $generalItem = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id, 'category' => 'general']);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $generalItem = ServiceCatalogItem::factory()->create(['category' => 'general']);
     $item = DentalTreatmentPlanItem::factory()->create([
-        'tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id, 'service_catalog_item_id' => $generalItem->id,
+        'treatment_plan_id' => $plan->id, 'service_catalog_item_id' => $generalItem->id,
     ]);
 
     $this->actingAs($igienista)->delete("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items/{$item->id}")
@@ -188,13 +176,12 @@ test('igienista cannot delete a general-category item even though they can view 
 });
 
 test('igienista can delete a hygiene-category item', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $hygieneItem = ServiceCatalogItem::factory()->hygiene()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $hygieneItem = ServiceCatalogItem::factory()->hygiene()->create();
     $item = DentalTreatmentPlanItem::factory()->create([
-        'tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id, 'service_catalog_item_id' => $hygieneItem->id,
+        'treatment_plan_id' => $plan->id, 'service_catalog_item_id' => $hygieneItem->id,
     ]);
 
     $this->actingAs($igienista)->delete("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items/{$item->id}")
@@ -204,24 +191,22 @@ test('igienista can delete a hygiene-category item', function () {
 });
 
 test('segreteria cannot delete any treatment plan item', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $item = DentalTreatmentPlanItem::factory()->create(['tenant_id' => $tenant->id, 'treatment_plan_id' => $plan->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $item = DentalTreatmentPlanItem::factory()->create(['treatment_plan_id' => $plan->id]);
 
     $this->actingAs($segreteria)->delete("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}/items/{$item->id}")
         ->assertForbidden();
 });
 
 test('an item cannot be edited or deleted from the wrong plan', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $planA = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $planB = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $itemOfPlanB = DentalTreatmentPlanItem::factory()->create(['tenant_id' => $tenant->id, 'treatment_plan_id' => $planB->id]);
-    $catalogItem = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $planA = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $planB = DentalTreatmentPlan::factory()->create(['patient_id' => $patient->id]);
+    $itemOfPlanB = DentalTreatmentPlanItem::factory()->create(['treatment_plan_id' => $planB->id]);
+    $catalogItem = ServiceCatalogItem::factory()->create();
 
     $this->actingAs($odontoiatra)->put("/patients/{$patient->id}/dental/treatment-plans/{$planA->id}/items/{$itemOfPlanB->id}", [
         'service_catalog_item_id' => $catalogItem->id, 'quantity' => 1,
@@ -232,31 +217,18 @@ test('an item cannot be edited or deleted from the wrong plan', function () {
 });
 
 test('a treatment plan cannot be accessed across patients', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $otherPatient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $plan = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $otherPatient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $otherPatient = Patient::factory()->create();
+    $plan = DentalTreatmentPlan::factory()->create(['patient_id' => $otherPatient->id]);
 
     $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/treatment-plans/{$plan->id}")
         ->assertStatus(404);
 });
 
-test('a treatment plan cannot be accessed across tenants', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $odontoiatraA = userForTenant($tenantA, 'odontoiatra');
-    $patientB = Patient::factory()->create(['tenant_id' => $tenantB->id]);
-    $planB = DentalTreatmentPlan::factory()->create(['tenant_id' => $tenantB->id, 'patient_id' => $patientB->id]);
-
-    $this->actingAs($odontoiatraA)->get("/patients/{$patientB->id}/dental/treatment-plans/{$planB->id}")
-        ->assertForbidden();
-});
-
 test('plan notes are encrypted at rest', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/treatment-plans", [
         'notes' => 'Nota clinica riservata',

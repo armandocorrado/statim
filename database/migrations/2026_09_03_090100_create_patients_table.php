@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('patients', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
 
             $table->string('first_name');
             $table->string('last_name');
@@ -31,7 +32,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tenant_id', 'last_name', 'first_name']);
+            $table->index(['last_name', 'first_name']);
         });
     }
 

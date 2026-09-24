@@ -1,7 +1,6 @@
 <?php
 
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Models\DentalDocument;
 use App\Modules\Dental\Models\DentalDocumentTooth;
 use Illuminate\Http\UploadedFile;
@@ -10,9 +9,8 @@ use Illuminate\Support\Facades\Storage;
 test('odontoiatra can upload a clinical document to private storage', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $file = UploadedFile::fake()->create('referto.pdf', 100, 'application/pdf');
 
@@ -35,9 +33,8 @@ test('odontoiatra can upload a clinical document to private storage', function (
 test('an unsupported file type is rejected', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $file = UploadedFile::fake()->create('script.exe', 10, 'application/x-msdownload');
 
@@ -51,11 +48,10 @@ test('an unsupported file type is rejected', function () {
 test('a document download requires clinical access and section match', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
+    $document = DentalDocument::factory()->create(['patient_id' => $patient->id]);
     Storage::disk('local')->put($document->file_path, 'fake pdf content');
 
     $this->actingAs($segreteria)->get("/patients/{$patient->id}/dental/documents/{$document->id}/download")
@@ -66,10 +62,9 @@ test('a document download requires clinical access and section match', function 
 });
 
 test('a dental document has no update or delete route', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $document = DentalDocument::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($odontoiatra)->delete("/patients/{$patient->id}/dental/documents/{$document->id}")
         ->assertStatus(404);
@@ -78,9 +73,8 @@ test('a dental document has no update or delete route', function () {
 test('a document can be linked to one or more teeth at upload time', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/documents", [
         'section' => 'general',
@@ -98,9 +92,8 @@ test('a document can be linked to one or more teeth at upload time', function ()
 test('a document without teeth (e.g. a whole-arch panoramic) links to none', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/documents", [
         'section' => 'general',
@@ -116,9 +109,8 @@ test('a document without teeth (e.g. a whole-arch panoramic) links to none', fun
 test('an invalid tooth number is rejected when linking a document', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/documents", [
         'section' => 'general',
@@ -131,9 +123,8 @@ test('an invalid tooth number is rejected when linking a document', function () 
 test('igienista can link teeth on a hygiene-section document they are allowed to upload', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($igienista)->post("/patients/{$patient->id}/dental/documents", [
         'section' => 'hygiene',
@@ -150,9 +141,8 @@ test('igienista can link teeth on a hygiene-section document they are allowed to
 test('a duplicate tooth number in the upload is only stored once', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/documents", [
         'section' => 'general',
@@ -166,10 +156,9 @@ test('a duplicate tooth number in the upload is only stored once', function () {
 });
 
 test('document-tooth links are truly append-only, no updated_at column', function () {
-    $tenant = Tenant::factory()->create();
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    DentalDocumentTooth::factory()->create(['tenant_id' => $tenant->id, 'document_id' => $document->id]);
+    $patient = Patient::factory()->create();
+    $document = DentalDocument::factory()->create(['patient_id' => $patient->id]);
+    DentalDocumentTooth::factory()->create(['document_id' => $document->id]);
 
     expect(\Illuminate\Support\Facades\Schema::hasColumn('dental_document_teeth', 'updated_at'))->toBeFalse();
 });
@@ -177,11 +166,9 @@ test('document-tooth links are truly append-only, no updated_at column', functio
 test('a previewable document (pdf) is served inline, not as an attachment', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
     $document = DentalDocument::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'mime_type' => 'application/pdf',
     ]);
@@ -196,11 +183,9 @@ test('a previewable document (pdf) is served inline, not as an attachment', func
 test('an image document is also previewable inline', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
     $document = DentalDocument::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'mime_type' => 'image/jpeg',
         'file_path' => 'dental-documents/fake/fake.jpg',
@@ -216,11 +201,9 @@ test('an image document is also previewable inline', function () {
 test('a non-previewable document falls back to a regular download', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
     $document = DentalDocument::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'mime_type' => 'application/msword',
         'file_path' => 'dental-documents/fake/fake.doc',
@@ -235,13 +218,12 @@ test('a non-previewable document falls back to a regular download', function () 
 test('previewing a document requires the same clinical access and section match as download', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $segreteria = userWithRole('segreteria');
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
-    $generalDocument = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $generalDocument = DentalDocument::factory()->create(['patient_id' => $patient->id]);
     Storage::disk('local')->put($generalDocument->file_path, 'fake pdf content');
 
     $this->actingAs($segreteria)->get("/patients/{$patient->id}/dental/documents/{$generalDocument->id}/preview")
@@ -257,11 +239,10 @@ test('previewing a document requires the same clinical access and section match 
 test('a document cannot be previewed across patients', function () {
     Storage::fake('local');
 
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $otherPatient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $otherPatient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $otherPatient = Patient::factory()->create();
+    $document = DentalDocument::factory()->create(['patient_id' => $otherPatient->id]);
     Storage::disk('local')->put($document->file_path, 'fake pdf content');
 
     $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental/documents/{$document->id}/preview")
@@ -269,8 +250,7 @@ test('a document cannot be previewed across patients', function () {
 });
 
 test('the document file_path is never exposed to the frontend', function () {
-    $tenant = Tenant::factory()->create();
-    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id]);
+    $document = DentalDocument::factory()->create([]);
 
     expect($document->toArray())->not->toHaveKey('file_path');
 });

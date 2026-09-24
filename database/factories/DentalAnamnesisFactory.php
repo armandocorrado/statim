@@ -18,7 +18,6 @@ class DentalAnamnesisFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'patient_id' => Patient::factory(),
             'pathologies' => null,
             'medications' => null,

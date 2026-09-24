@@ -30,6 +30,6 @@ class ServiceCatalogItemPolicy
 
     public function update(User $user, ServiceCatalogItem $item): bool
     {
-        return $item->tenant_id === $user->tenant_id && $user->can('treatment_plans.administer');
+        return $user->can('treatment_plans.administer');
     }
 }

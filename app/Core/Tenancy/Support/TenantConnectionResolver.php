@@ -31,9 +31,21 @@ class TenantConnectionResolver
      */
     private readonly string $originalDefaultConnection;
 
+    /**
+     * Il valore di config('database.connections.tenant.database') PRIMA di
+     * qualunque forTenant() in questo ciclo di vita — a cosa tornare in
+     * release(). Nei test è quasi sempre ':memory:' (fallback sqlite di
+     * config/database.php): un null hardcoded qui romperebbe la connessione
+     * condivisa dei test che, dopo un release(), continuano a usare 'tenant'
+     * senza aver mai risolto un altro Tenant reale (es. userWithRole() dopo
+     * aver provisionato uno studio isolato in un altro test/helper).
+     */
+    private readonly mixed $originalTenantDatabase;
+
     public function __construct()
     {
         $this->originalDefaultConnection = DB::getDefaultConnection();
+        $this->originalTenantDatabase = Config::get('database.connections.tenant.database');
     }
 
     public function forTenant(Tenant $tenant): void
@@ -49,12 +61,17 @@ class TenantConnectionResolver
         // non alla prima query reale eseguita altrove nel codice.
         DB::connection('tenant')->getPdo();
 
-        // Bridge temporaneo (Tappa 2): i 22 modelli di dominio non
-        // dichiarano ancora esplicitamente connection='tenant' (arriva con
-        // la Tappa 3, stesso pattern gia' usato da Tenant/TenantUser verso
-        // 'central'). Fino ad allora, far diventare 'tenant' la connessione
-        // di default dell'app e' l'unico modo perche' quei modelli seguano
-        // lo studio risolto senza toccarli uno per uno adesso.
+        // Bridge NON piu' temporaneo (rivalutato in Tappa 3, quando ogni
+        // modello di dominio ha gia' ottenuto UsesTenantConnection): resta
+        // necessario perche' ~22 FormRequest in tutta l'app usano
+        // Rule::exists('tabella', ...)/Rule::unique('tabella', ...) con un
+        // nome di tabella nudo, non un model Eloquent — quelle query girano
+        // via DB::table() sulla connessione di DEFAULT dell'app, non su
+        // 'tenant', e non seguono UsesTenantConnection. Senza questa riga
+        // ogni validazione con Rule::exists/Rule::unique in produzione
+        // risolverebbe sul database sbagliato. Rimuoverlo richiederebbe
+        // riscrivere tutti quei call site con la sintassi 'tenant.tabella' o
+        // ->using(), non solo eliminare questa riga.
         DB::setDefaultConnection('tenant');
 
         $this->current = $tenant;
@@ -66,13 +83,30 @@ class TenantConnectionResolver
     }
 
     /**
+     * Attacca l'identità di $tenant a QUALUNQUE cosa la connessione 'tenant'
+     * stia già puntando, senza toccare config/PDO — a differenza di
+     * forTenant(), non fa Config::set()/DB::purge(). Serve solo ai test
+     * Feature che usano actingAs() (che salta la sessione, quindi
+     * RestoreTenantConnection non gira mai e current() resterebbe null):
+     * la connessione condivisa ':memory:' di quei test è già corretta,
+     * manca solo l'oggetto Tenant per il codice applicativo che lo legge
+     * (es. UserController::storeInvitation() per comporre l'email di
+     * invito). Mai usare fuori dai test: non verifica is_active né
+     * risolve realmente alcun database.
+     */
+    public function setCurrentForTesting(Tenant $tenant): void
+    {
+        $this->current = $tenant;
+    }
+
+    /**
      * Torna allo stato "nessuno studio selezionato". Da chiamare sempre a
      * fine job in un worker di coda riusato tra job di studi diversi, per non
      * far trapelare la connessione di un job nel successivo.
      */
     public function release(): void
     {
-        Config::set('database.connections.tenant.database', null);
+        Config::set('database.connections.tenant.database', $this->originalTenantDatabase);
         DB::purge('tenant');
         DB::setDefaultConnection($this->originalDefaultConnection);
 

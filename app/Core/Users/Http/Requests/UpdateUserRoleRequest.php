@@ -17,9 +17,7 @@ class UpdateUserRoleRequest extends FormRequest
         return [
             'role' => [
                 'required', 'string',
-                Rule::exists('roles', 'name')
-                    ->where('tenant_id', $this->user()->tenant_id)
-                    ->where('guard_name', 'web'),
+                Rule::exists('roles', 'name')->where('guard_name', 'web'),
             ],
         ];
     }

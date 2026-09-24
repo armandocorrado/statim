@@ -2,19 +2,22 @@
 
 use App\Core\Agenda\Models\Appointment;
 use App\Core\Tenancy\Models\Tenant;
+use App\Core\Tenancy\Support\TenantConnectionResolver;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoAppointmentSeeder;
-use Spatie\Permission\PermissionRegistrar;
 
-test('the demo appointment seeder gives every odontoiatra 5 appointments per demo tenant', function () {
+test('the demo appointment seeder gives every odontoiatra 5 appointments per demo studio', function () {
+    cleanupDemoStudioFiles();
     (new DatabaseSeeder)->run();
+
+    $resolver = app(TenantConnectionResolver::class);
 
     foreach (['rossi.test', 'bianchi.test'] as $emailDomain) {
         $tenant = Tenant::where('email', "info@{$emailDomain}")->firstOrFail();
-        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
+        $resolver->forTenant($tenant);
 
-        $odontoiatri = User::where('tenant_id', $tenant->id)->role('odontoiatra')->get();
+        $odontoiatri = User::role('odontoiatra')->get();
         expect($odontoiatri)->toHaveCount(5);
 
         $pairings = [
@@ -45,23 +48,52 @@ test('the demo appointment seeder gives every odontoiatra 5 appointments per dem
         }
 
         // Igienisti e aso restano senza appuntamenti propri in questa passata.
-        $igienisti = User::where('tenant_id', $tenant->id)->role('igienista')->get();
+        $igienisti = User::role('igienista')->get();
         foreach ($igienisti as $operator) {
             expect(Appointment::where('operator_id', $operator->id)->count())->toBe(0);
         }
+
+        $resolver->release();
     }
 });
 
 test('running the demo appointment seeder twice does not duplicate appointments', function () {
+    cleanupDemoStudioFiles();
     (new DatabaseSeeder)->run();
+
+    $resolver = app(TenantConnectionResolver::class);
+    $tenant = Tenant::where('email', 'info@rossi.test')->firstOrFail();
+    $resolver->forTenant($tenant);
+
     $countAfterFirstRun = Appointment::count();
 
     (new DemoAppointmentSeeder)->run();
 
     expect(Appointment::count())->toBe($countAfterFirstRun);
+
+    $resolver->release();
 });
 
-test('the demo appointment seeder does nothing when the demo tenants do not exist', function () {
+test('the demo appointment seeder does nothing on a studio with no admin/odontoiatra/patients yet', function () {
+    $path = sys_get_temp_dir().'/medcare_test_'.bin2hex(random_bytes(8)).'.sqlite';
+    touch($path);
+
+    $tenant = Tenant::factory()->create(['database_name' => $path]);
+
+    $resolver = app(TenantConnectionResolver::class);
+    $resolver->forTenant($tenant);
+
+    \Illuminate\Support\Facades\Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => 'database/migrations',
+        '--force' => true,
+    ]);
+
+    \App\Core\Users\Support\TenantRoleProvisioner::provisionDefaults();
+
     expect(fn () => (new DemoAppointmentSeeder)->run())->not->toThrow(Exception::class);
     expect(Appointment::count())->toBe(0);
+
+    $resolver->release();
+    unlink($path);
 });

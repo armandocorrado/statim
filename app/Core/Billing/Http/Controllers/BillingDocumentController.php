@@ -127,7 +127,6 @@ class BillingDocumentController extends Controller
         $this->authorize('issue', $document);
 
         DB::transaction(function () use ($document, $sdiGateway, $tsGateway, $preservationGateway) {
-            $tenant = $document->tenant;
             $year = (int) now()->format('Y');
 
             $totals = BillingDocumentTotalsCalculator::calculate($document->lines->map(fn ($line) => [
@@ -136,7 +135,7 @@ class BillingDocumentController extends Controller
                 'vat_rate' => $line->vat_rate,
             ]));
 
-            $document->document_number = BillingDocumentNumberer::next($tenant, $year);
+            $document->document_number = BillingDocumentNumberer::next($year);
             $document->document_year = $year;
             $document->issued_at = now();
             $document->total_taxable = $totals['taxable'];

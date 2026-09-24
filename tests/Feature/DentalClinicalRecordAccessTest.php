@@ -1,32 +1,28 @@
 <?php
 
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Models\DentalAnamnesis;
 use Illuminate\Support\Facades\DB;
 
 test('segreteria cannot open the clinical record', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($segreteria)->get("/patients/{$patient->id}/dental")
         ->assertForbidden();
 });
 
 test('aso cannot open the clinical record', function () {
-    $tenant = Tenant::factory()->create();
-    $aso = userForTenant($tenant, 'aso');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $aso = userWithRole('aso');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($aso)->get("/patients/{$patient->id}/dental")
         ->assertForbidden();
 });
 
 test('odontoiatra can open the clinical record with full access', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental")
         ->assertOk()
@@ -37,9 +33,8 @@ test('odontoiatra can open the clinical record with full access', function () {
 });
 
 test('igienista can open the clinical record with partial access', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($igienista)->get("/patients/{$patient->id}/dental")
         ->assertOk()
@@ -50,9 +45,8 @@ test('igienista can open the clinical record with partial access', function () {
 });
 
 test('admin can open the clinical record with full access', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($admin)->get("/patients/{$patient->id}/dental")
         ->assertOk()
@@ -60,9 +54,8 @@ test('admin can open the clinical record with full access', function () {
 });
 
 test('opening the clinical record is recorded in the audit log', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental");
 
@@ -74,20 +67,9 @@ test('opening the clinical record is recorded in the audit log', function () {
     ]);
 });
 
-test('the clinical record cannot be opened across tenants', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $odontoiatraA = userForTenant($tenantA, 'odontoiatra');
-    $patientB = Patient::factory()->create(['tenant_id' => $tenantB->id]);
-
-    $this->actingAs($odontoiatraA)->get("/patients/{$patientB->id}/dental")
-        ->assertForbidden();
-});
-
 test('anamnesis content is encrypted at rest', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($odontoiatra)->put("/patients/{$patient->id}/dental/anamnesis", [
         'pathologies' => 'Diabete di tipo 2',

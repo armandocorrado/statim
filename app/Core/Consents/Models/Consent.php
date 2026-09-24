@@ -6,7 +6,7 @@ use App\Core\Consents\Enums\ConsentCollectionMethod;
 use App\Core\Consents\Enums\ConsentPurpose;
 use App\Core\Consents\Enums\PolicyVersion;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use Database\Factories\ConsentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class Consent extends Model
 {
-    use BelongsToTenant, HasFactory, HasUlids;
+    use UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

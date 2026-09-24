@@ -17,17 +17,16 @@ class UpdateAppointmentRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = $this->user()->tenant_id;
         $appointment = $this->route('appointment');
 
         return [
             'patient_id' => [
                 'nullable', 'ulid',
-                Rule::exists('patients', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('patients', 'id'),
             ],
             'operator_id' => [
                 'required', 'ulid',
-                Rule::exists('users', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('users', 'id'),
                 function (string $attribute, mixed $value, \Closure $fail) {
                     if (! $this->user()->can('agenda.manage.all') && $value !== $this->user()->id) {
                         $fail('Non puoi assegnare questo appuntamento a un altro operatore.');
@@ -36,7 +35,7 @@ class UpdateAppointmentRequest extends FormRequest
             ],
             'assistant_id' => [
                 'nullable', 'ulid',
-                Rule::exists('users', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('users', 'id'),
                 function (string $attribute, mixed $value, \Closure $fail) {
                     if ($value && $value === $this->input('operator_id')) {
                         $fail("L'assistente non può coincidere con l'operatore.");
@@ -45,16 +44,16 @@ class UpdateAppointmentRequest extends FormRequest
             ],
             'appointment_type_id' => [
                 'nullable', 'ulid',
-                Rule::exists('appointment_types', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('appointment_types', 'id'),
             ],
             'start_at' => ['required', 'date'],
             'end_at' => ['required', 'date', 'after:start_at'],
             'status' => ['required', new Enum(AppointmentStatus::class)],
             'notes' => ['nullable', 'string', 'max:5000'],
             'overlap' => [
-                function (string $attribute, mixed $value, \Closure $fail) use ($tenantId, $appointment) {
+                function (string $attribute, mixed $value, \Closure $fail) use ($appointment) {
                     $busy = AppointmentOverlapChecker::personIsBusy(
-                        $tenantId, $this->input('operator_id'),
+                        $this->input('operator_id'),
                         $this->input('start_at'), $this->input('end_at'),
                         excludingAppointmentId: $appointment->id,
                     );
@@ -65,13 +64,13 @@ class UpdateAppointmentRequest extends FormRequest
                 },
             ],
             'assistant_overlap' => [
-                function (string $attribute, mixed $value, \Closure $fail) use ($tenantId, $appointment) {
+                function (string $attribute, mixed $value, \Closure $fail) use ($appointment) {
                     if (! $this->input('assistant_id')) {
                         return;
                     }
 
                     $busy = AppointmentOverlapChecker::personIsBusy(
-                        $tenantId, $this->input('assistant_id'),
+                        $this->input('assistant_id'),
                         $this->input('start_at'), $this->input('end_at'),
                         excludingAppointmentId: $appointment->id,
                     );

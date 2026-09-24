@@ -19,7 +19,6 @@ class QuoteFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'patient_id' => Patient::factory(),
             'source_treatment_plan_id' => null,
             'status' => QuoteStatus::Draft,

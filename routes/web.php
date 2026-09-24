@@ -29,7 +29,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'tenant'])
+    ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -38,7 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('patients', PatientController::class);
 
     Route::get('agenda', [AgendaController::class, 'index'])->name('agenda.index');
@@ -101,8 +101,12 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 });
 
 Route::middleware('guest')->group(function () {
-    Route::get('invitations/{token}', [InvitationAcceptController::class, 'show'])->name('invitations.accept');
-    Route::post('invitations/{token}', [InvitationAcceptController::class, 'store'])->name('invitations.store');
+    // Lo studio e' nell'URL apposta: accettare un invito e' un flusso da
+    // ospite (nessuna sessione, quindi RestoreTenantConnection non ha nulla
+    // da risolvere) — serve sapere quale DB interrogare PRIMA di cercare
+    // l'invito stesso, non dopo.
+    Route::get('invitations/{tenant}/{token}', [InvitationAcceptController::class, 'show'])->name('invitations.accept');
+    Route::post('invitations/{tenant}/{token}', [InvitationAcceptController::class, 'store'])->name('invitations.store');
 });
 
 require __DIR__.'/auth.php';

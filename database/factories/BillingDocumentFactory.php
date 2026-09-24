@@ -19,7 +19,6 @@ class BillingDocumentFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'patient_id' => Patient::factory(),
             'recipient_patient_id' => null,
             'recipient_name' => fake()->name(),

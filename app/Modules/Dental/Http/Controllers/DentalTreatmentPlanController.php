@@ -36,7 +36,6 @@ class DentalTreatmentPlanController extends Controller
     {
         $plan = new DentalTreatmentPlan($request->validated());
         $plan->patient_id = $patient->id;
-        $plan->tenant_id = $patient->tenant_id;
         $plan->created_by = $request->user()->id;
         $plan->save();
 
@@ -87,7 +86,6 @@ class DentalTreatmentPlanController extends Controller
         abort_if($treatmentPlan->patient_id !== $patient->id, 404);
 
         $quote = new Quote(['patient_id' => $patient->id, 'source_treatment_plan_id' => $treatmentPlan->id]);
-        $quote->tenant_id = $treatmentPlan->tenant_id;
         $quote->status = QuoteStatus::Draft;
         $quote->created_by = $request->user()->id;
         $quote->save();

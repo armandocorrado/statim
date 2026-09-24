@@ -17,7 +17,6 @@ class DentalDocumentToothFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'document_id' => DentalDocument::factory(),
             'tooth_number' => '11',
         ];

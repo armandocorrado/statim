@@ -2,7 +2,6 @@
 
 use App\Core\Consents\Models\Consent;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Notifications\Events\NotificationSkipped;
 use Illuminate\Support\Facades\Event;
@@ -25,8 +24,7 @@ function fakeNotificationOutcomeEvents(): void
 test('a notification to a patient without a valid consent is blocked', function () {
     fakeNotificationOutcomeEvents();
 
-    $tenant = Tenant::factory()->create();
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'email' => 'paziente@example.test']);
+    $patient = Patient::factory()->create(['email' => 'paziente@example.test']);
 
     $patient->notify(new ConsentTestNotification);
 
@@ -37,10 +35,8 @@ test('a notification to a patient without a valid consent is blocked', function 
 test('a notification to a patient with an active matching consent is sent', function () {
     fakeNotificationOutcomeEvents();
 
-    $tenant = Tenant::factory()->create();
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'email' => 'paziente@example.test']);
+    $patient = Patient::factory()->create(['email' => 'paziente@example.test']);
     Consent::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'purpose' => 'marketing',
     ]);
@@ -54,10 +50,8 @@ test('a notification to a patient with an active matching consent is sent', func
 test('a notification to a patient with a revoked consent is blocked', function () {
     fakeNotificationOutcomeEvents();
 
-    $tenant = Tenant::factory()->create();
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'email' => 'paziente@example.test']);
+    $patient = Patient::factory()->create(['email' => 'paziente@example.test']);
     Consent::factory()->revoked()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'purpose' => 'marketing',
     ]);
@@ -71,10 +65,8 @@ test('a notification to a patient with a revoked consent is blocked', function (
 test('a notification to a patient with consent but no contact value for the channel is blocked', function () {
     fakeNotificationOutcomeEvents();
 
-    $tenant = Tenant::factory()->create();
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'email' => null]);
+    $patient = Patient::factory()->create(['email' => null]);
     Consent::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'purpose' => 'marketing',
     ]);
@@ -88,8 +80,7 @@ test('a notification to a patient with consent but no contact value for the chan
 test('a notification to a patient that does not declare a consent purpose is blocked by default', function () {
     fakeNotificationOutcomeEvents();
 
-    $tenant = Tenant::factory()->create();
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id, 'email' => 'paziente@example.test']);
+    $patient = Patient::factory()->create(['email' => 'paziente@example.test']);
 
     $patient->notify(new PlainTestNotification);
 
@@ -100,7 +91,7 @@ test('a notification to a patient that does not declare a consent purpose is blo
 test('a notification to a non-patient notifiable is unaffected by the consent gate', function () {
     fakeNotificationOutcomeEvents();
 
-    $admin = userForTenant(Tenant::factory()->create(), 'admin');
+    $admin = userWithRole('admin');
 
     $admin->notify(new PlainTestNotification);
 

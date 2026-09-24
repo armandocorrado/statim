@@ -27,7 +27,7 @@ class UserInvited extends Notification
             ->subject("Invito a unirti a {$this->tenant->name} su MedCare")
             ->greeting('Sei stato invitato su MedCare')
             ->line("Sei stato invitato a unirti allo studio \"{$this->tenant->name}\" su MedCare.")
-            ->action('Accetta invito', route('invitations.accept', $this->plainTextToken))
+            ->action('Accetta invito', route('invitations.accept', ['tenant' => $this->tenant->id, 'token' => $this->plainTextToken]))
             ->line('Il link scade tra 7 giorni.');
     }
 }

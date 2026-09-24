@@ -1,13 +1,11 @@
 <?php
 
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Models\DentalAlert;
 
 test('odontoiatra can add an allergy alert', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/alerts", [
         'category' => 'allergy',
@@ -21,9 +19,8 @@ test('odontoiatra can add an allergy alert', function () {
 });
 
 test('igienista can also add and see alerts — safety data is not sectioned', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($igienista)->post("/patients/{$patient->id}/dental/alerts", [
         'category' => 'risk',
@@ -35,9 +32,8 @@ test('igienista can also add and see alerts — safety data is not sectioned', f
 });
 
 test('segreteria cannot add an alert', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($segreteria)->post("/patients/{$patient->id}/dental/alerts", [
         'category' => 'allergy',
@@ -46,10 +42,9 @@ test('segreteria cannot add an alert', function () {
 });
 
 test('resolving an alert deactivates it without deleting it', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $alert = DentalAlert::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
+    $alert = DentalAlert::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($admin)->patch("/patients/{$patient->id}/dental/alerts/{$alert->id}/resolve")
         ->assertSessionHasNoErrors();
@@ -59,10 +54,9 @@ test('resolving an alert deactivates it without deleting it', function () {
 });
 
 test('a resolved alert no longer appears on the clinical record', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    DentalAlert::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id, 'is_active' => false]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    DentalAlert::factory()->create(['patient_id' => $patient->id, 'is_active' => false]);
 
     $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental")
         ->assertInertia(fn ($page) => $page->has('alerts', 0));

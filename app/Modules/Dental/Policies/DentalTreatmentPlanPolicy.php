@@ -11,22 +11,22 @@ class DentalTreatmentPlanPolicy
 {
     public function viewAny(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && $user->can('treatment_plans.view');
+        return $user->can('treatment_plans.view');
     }
 
     public function view(User $user, DentalTreatmentPlan $plan): bool
     {
-        return $plan->tenant_id === $user->tenant_id && $user->can('treatment_plans.view');
+        return $user->can('treatment_plans.view');
     }
 
     public function createFor(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && TreatmentPlanAccessChecker::canManageAny($user);
+        return TreatmentPlanAccessChecker::canManageAny($user);
     }
 
     public function update(User $user, DentalTreatmentPlan $plan): bool
     {
-        return $plan->tenant_id === $user->tenant_id && TreatmentPlanAccessChecker::canManageAny($user);
+        return TreatmentPlanAccessChecker::canManageAny($user);
     }
 
     public function delete(User $user, DentalTreatmentPlan $plan): bool
@@ -41,6 +41,6 @@ class DentalTreatmentPlanPolicy
      */
     public function generateQuote(User $user, DentalTreatmentPlan $plan): bool
     {
-        return $plan->tenant_id === $user->tenant_id && $user->can('treatment_plans.administer');
+        return $user->can('treatment_plans.administer');
     }
 }

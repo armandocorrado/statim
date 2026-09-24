@@ -5,14 +5,12 @@ use App\Core\Patients\Models\Patient;
 use App\Core\Tenancy\Models\Tenant;
 
 test('two appointments for the same operator cannot overlap', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patientA = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $patientB = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $patientA = Patient::factory()->create();
+    $patientB = Patient::factory()->create();
 
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patientA->id,
         'start_at' => '2027-01-10 10:00:00',
@@ -31,14 +29,12 @@ test('two appointments for the same operator cannot overlap', function () {
 });
 
 test('back-to-back appointments for the same operator do not overlap', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patientA = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $patientB = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $patientA = Patient::factory()->create();
+    $patientB = Patient::factory()->create();
 
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patientA->id,
         'start_at' => '2027-01-10 10:00:00',
@@ -57,15 +53,13 @@ test('back-to-back appointments for the same operator do not overlap', function 
 });
 
 test('two appointments for different operators at the same time do not overlap', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $igienista = userForTenant($tenant, 'igienista');
-    $patientA = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $patientB = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $igienista = userWithRole('igienista');
+    $patientA = Patient::factory()->create();
+    $patientB = Patient::factory()->create();
 
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patientA->id,
         'start_at' => '2027-01-10 10:00:00',
@@ -83,14 +77,12 @@ test('two appointments for different operators at the same time do not overlap',
 });
 
 test('a cancelled appointment does not block a new one in the same slot', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patientA = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $patientB = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $patientA = Patient::factory()->create();
+    $patientB = Patient::factory()->create();
 
     Appointment::factory()->cancelled()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patientA->id,
         'start_at' => '2027-01-10 10:00:00',
@@ -108,21 +100,18 @@ test('a cancelled appointment does not block a new one in the same slot', functi
 });
 
 test('updating an appointment into an overlap with another is rejected', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patientA = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $patientB = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $patientA = Patient::factory()->create();
+    $patientB = Patient::factory()->create();
 
     Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patientA->id,
         'start_at' => '2027-01-10 10:00:00',
         'end_at' => '2027-01-10 10:30:00',
     ]);
     $appointmentB = Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patientB->id,
         'start_at' => '2027-01-10 11:00:00',
@@ -141,13 +130,11 @@ test('updating an appointment into an overlap with another is rejected', functio
 });
 
 test('updating an appointment without changing its own slot is not blocked by itself', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $appointment = Appointment::factory()->create([
-        'tenant_id' => $tenant->id,
         'operator_id' => $odontoiatra->id,
         'patient_id' => $patient->id,
         'start_at' => '2027-01-10 10:00:00',

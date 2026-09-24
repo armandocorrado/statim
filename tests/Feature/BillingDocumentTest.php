@@ -4,7 +4,6 @@ use App\Core\Billing\Enums\BillingDocumentStatus;
 use App\Core\Billing\Enums\FiscalChannel;
 use App\Core\Billing\Models\BillingDocument;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 
 function billingLinePayload(array $overrides = []): array
 {
@@ -18,9 +17,8 @@ function billingLinePayload(array $overrides = []): array
 }
 
 test('segreteria can create a draft document', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $segreteria = userWithRole('segreteria');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($segreteria)->post('/billing', [
         'patient_id' => $patient->id,
@@ -37,9 +35,8 @@ test('segreteria can create a draft document', function () {
 });
 
 test('odontoiatra cannot create a billing document', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($odontoiatra)->post('/billing', [
         'patient_id' => $patient->id,
@@ -50,10 +47,8 @@ test('odontoiatra cannot create a billing document', function () {
 });
 
 test('the recipient fiscal data is a frozen snapshot, not a live join', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
+    $admin = userWithRole('admin');
     $patient = Patient::factory()->create([
-        'tenant_id' => $tenant->id,
         'first_name' => 'Mario',
         'last_name' => 'Rossi',
         'address_city' => 'Roma',
@@ -76,9 +71,8 @@ test('the recipient fiscal data is a frozen snapshot, not a live join', function
 });
 
 test('a draft can be edited and deleted, an issued document cannot', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($admin)->post('/billing', [
         'patient_id' => $patient->id,
@@ -105,9 +99,8 @@ test('a draft can be edited and deleted, an issued document cannot', function ()
 });
 
 test('issuing a document assigns a number, freezes totals and resolves the fiscal channel', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($admin)->post('/billing', [
         'patient_id' => $patient->id,
@@ -132,10 +125,9 @@ test('issuing a document assigns a number, freezes totals and resolves the fisca
         ->and($document->external_reference)->not->toBeNull();
 });
 
-test('document numbers are sequential per tenant and year, without gaps', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+test('document numbers are sequential per year, without gaps', function () {
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
 
     $numbers = [];
     for ($i = 0; $i < 3; $i++) {
@@ -152,33 +144,4 @@ test('document numbers are sequential per tenant and year, without gaps', functi
     }
 
     expect($numbers)->toBe([1, 2, 3]);
-});
-
-test('numbering is independent per tenant', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $adminA = userForTenant($tenantA, 'admin');
-    $adminB = userForTenant($tenantB, 'admin');
-    $patientA = Patient::factory()->create(['tenant_id' => $tenantA->id]);
-    $patientB = Patient::factory()->create(['tenant_id' => $tenantB->id]);
-
-    $this->actingAs($adminA)->post('/billing', ['patient_id' => $patientA->id, 'lines' => [billingLinePayload()]]);
-    $documentA = BillingDocument::where('patient_id', $patientA->id)->firstOrFail();
-    $this->actingAs($adminA)->patch("/billing/{$documentA->id}/issue");
-
-    $this->actingAs($adminB)->post('/billing', ['patient_id' => $patientB->id, 'lines' => [billingLinePayload()]]);
-    $documentB = BillingDocument::where('patient_id', $patientB->id)->firstOrFail();
-    $this->actingAs($adminB)->patch("/billing/{$documentB->id}/issue");
-
-    expect($documentA->fresh()->document_number)->toBe(1)
-        ->and($documentB->fresh()->document_number)->toBe(1);
-});
-
-test('a document cannot be viewed across tenants', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $adminA = userForTenant($tenantA, 'admin');
-    $documentB = BillingDocument::factory()->create(['tenant_id' => $tenantB->id]);
-
-    $this->actingAs($adminA)->get("/billing/{$documentB->id}")->assertForbidden();
 });

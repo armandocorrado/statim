@@ -2,14 +2,12 @@
 
 namespace App\Core\Tenancy\Models;
 
-use App\Models\User;
 use Database\Factories\TenantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'slug', 'database_name', 'vat_number', 'email', 'phone', 'is_active'])]
 class Tenant extends Model
@@ -18,9 +16,7 @@ class Tenant extends Model
 
     /**
      * Registro centrale, non il DB dello studio: vive sempre su 'central',
-     * mai sulla connessione dinamica 'tenant'. Le relazioni sotto restano
-     * valide perche' Eloquent esegue una query separata per relazione (nessun
-     * JOIN cross-connessione).
+     * mai sulla connessione dinamica 'tenant'.
      */
     protected $connection = 'central';
 
@@ -34,10 +30,5 @@ class Tenant extends Model
         return [
             'is_active' => 'boolean',
         ];
-    }
-
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class);
     }
 }

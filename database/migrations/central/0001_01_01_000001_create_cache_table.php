@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
+     * Infrastruttura trasversale, non dati di uno studio: una entry di cache
+     * esiste indipendentemente da quale tenant sia stato risolto (es. il
+     * rate limiting del login, PRIMA di sapere quale studio).
+     */
+    protected $connection = 'central';
+
+    /**
      * Run the migrations.
      */
     public function up(): void

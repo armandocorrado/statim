@@ -22,7 +22,6 @@ class AppointmentFactory extends Factory
         $end = (clone $start)->modify('+30 minutes');
 
         return [
-            'tenant_id' => Tenant::factory(),
             'patient_id' => Patient::factory(),
             'operator_id' => User::factory(),
             'assistant_id' => null,

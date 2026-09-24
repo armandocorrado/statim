@@ -1,26 +1,24 @@
 <?php
 
+use App\Core\Tenancy\Models\Tenant;
+use App\Core\Tenancy\Support\TenantConnectionResolver;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoTeamSeeder;
-use Spatie\Permission\PermissionRegistrar;
 
-test('the demo team seeder adds 4 odontoiatri, 4 igienisti and 4 aso per demo tenant', function () {
+test('the demo team seeder adds 4 odontoiatri, 4 igienisti and 4 aso per demo studio', function () {
+    cleanupDemoStudioFiles();
     (new DatabaseSeeder)->run();
 
-    foreach (['rossi.test', 'bianchi.test'] as $emailDomain) {
-        $tenant = \App\Core\Tenancy\Models\Tenant::where('email', "info@{$emailDomain}")->firstOrFail();
-        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
+    $resolver = app(TenantConnectionResolver::class);
 
-        $odontoiatri = User::where('tenant_id', $tenant->id)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'odontoiatra'))
-            ->get();
-        $igienisti = User::where('tenant_id', $tenant->id)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'igienista'))
-            ->get();
-        $aso = User::where('tenant_id', $tenant->id)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'aso'))
-            ->get();
+    foreach (['rossi.test', 'bianchi.test'] as $emailDomain) {
+        $tenant = Tenant::where('email', "info@{$emailDomain}")->firstOrFail();
+        $resolver->forTenant($tenant);
+
+        $odontoiatri = User::whereHas('roles', fn ($q) => $q->where('name', 'odontoiatra'))->get();
+        $igienisti = User::whereHas('roles', fn ($q) => $q->where('name', 'igienista'))->get();
+        $aso = User::whereHas('roles', fn ($q) => $q->where('name', 'aso'))->get();
 
         // 1 each already comes from DatabaseSeeder's own base roster.
         expect($odontoiatri)->toHaveCount(5)
@@ -41,19 +39,24 @@ test('the demo team seeder adds 4 odontoiatri, 4 igienisti and 4 aso per demo te
             $user = User::where('email', "{$localPart}@{$emailDomain}")->firstOrFail();
             expect($user->getRoleNames()->all())->toBe(['aso']);
         }
+
+        $resolver->release();
     }
 });
 
 test('running the demo team seeder twice does not create duplicates', function () {
+    cleanupDemoStudioFiles();
     (new DatabaseSeeder)->run();
+
+    $resolver = app(TenantConnectionResolver::class);
+    $tenant = Tenant::where('email', 'info@rossi.test')->firstOrFail();
+    $resolver->forTenant($tenant);
+
     $countAfterFirstRun = User::count();
 
-    (new DemoTeamSeeder)->run();
+    (new DemoTeamSeeder)->run('rossi.test');
 
     expect(User::count())->toBe($countAfterFirstRun);
-});
 
-test('the demo team seeder does nothing when the demo tenants do not exist', function () {
-    expect(fn () => (new DemoTeamSeeder)->run())->not->toThrow(Exception::class);
-    expect(User::count())->toBe(0);
+    $resolver->release();
 });

@@ -3,7 +3,6 @@
 namespace App\Core\Agenda\Support;
 
 use App\Core\Agenda\Models\AppointmentType;
-use App\Core\Tenancy\Models\Tenant;
 
 /**
  * Tipi di appuntamento di default per un nuovo tenant. A differenza dei
@@ -28,11 +27,16 @@ class AppointmentTypeProvisioner
         ];
     }
 
-    public static function provisionDefaults(Tenant $tenant): void
+    /**
+     * Chiamare con la connessione 'tenant' gia' risolta sullo studio giusto
+     * (TenantConnectionResolver::forTenant()) - qui non serve piu' sapere
+     * quale tenant, la connessione lo fa gia'.
+     */
+    public static function provisionDefaults(): void
     {
         foreach (self::defaultTypes() as $name => $color) {
             AppointmentType::firstOrCreate(
-                ['tenant_id' => $tenant->id, 'name' => $name],
+                ['name' => $name],
                 ['color' => $color],
             );
         }

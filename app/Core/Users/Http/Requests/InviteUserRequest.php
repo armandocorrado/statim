@@ -21,8 +21,7 @@ class InviteUserRequest extends FormRequest
                 'required', 'email', 'max:255',
                 Rule::unique('users', 'email'),
                 function (string $attribute, mixed $value, \Closure $fail) {
-                    $pending = Invitation::where('tenant_id', $this->user()->tenant_id)
-                        ->where('email', $value)
+                    $pending = Invitation::where('email', $value)
                         ->whereNull('accepted_at')
                         ->where('expires_at', '>', now())
                         ->exists();
@@ -34,9 +33,7 @@ class InviteUserRequest extends FormRequest
             ],
             'role' => [
                 'required', 'string',
-                Rule::exists('roles', 'name')
-                    ->where('tenant_id', $this->user()->tenant_id)
-                    ->where('guard_name', 'web'),
+                Rule::exists('roles', 'name')->where('guard_name', 'web'),
             ],
         ];
     }

@@ -7,11 +7,6 @@ use App\Models\User;
 
 class PatientPolicy
 {
-    /**
-     * Defense in depth: even though Patient already carries a TenantScope
-     * global scope, every authorization check re-verifies the tenant match
-     * explicitly so a bypassed/forgotten scope can never leak cross-tenant data.
-     */
     public function viewAny(User $user): bool
     {
         return $user->can('patients.view');
@@ -19,7 +14,7 @@ class PatientPolicy
 
     public function view(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && $user->can('patients.view');
+        return $user->can('patients.view');
     }
 
     public function create(User $user): bool
@@ -29,11 +24,11 @@ class PatientPolicy
 
     public function update(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && $user->can('patients.update');
+        return $user->can('patients.update');
     }
 
     public function delete(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && $user->can('patients.delete');
+        return $user->can('patients.delete');
     }
 }

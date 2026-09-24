@@ -14,13 +14,11 @@ class UpdateQuoteRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = $this->user()->tenant_id;
-
         return [
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.service_catalog_item_id' => [
                 'nullable', 'ulid',
-                Rule::exists('service_catalog_items', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('service_catalog_items', 'id'),
             ],
             'lines.*.description' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.01'],

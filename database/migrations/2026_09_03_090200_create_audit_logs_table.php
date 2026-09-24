@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('user_id')->nullable()->constrained('users')->nullOnDelete();
 
             $table->string('action');
@@ -24,7 +25,7 @@ return new class extends Migration
             // Append-only log: no updated_at, no soft deletes.
             $table->timestamp('created_at')->useCurrent();
 
-            $table->index(['tenant_id', 'auditable_type', 'auditable_id']);
+            $table->index(['auditable_type', 'auditable_id']);
         });
     }
 

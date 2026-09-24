@@ -18,16 +18,16 @@ class DentalToothConditionPolicy
 {
     public function view(User $user, DentalToothCondition $condition): bool
     {
-        return $condition->tenant_id === $user->tenant_id && $user->can('odontogram.view');
+        return $user->can('odontogram.view');
     }
 
     public function viewOdontogram(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && $user->can('odontogram.view');
+        return $user->can('odontogram.view');
     }
 
     public function createFor(User $user, Patient $patient): bool
     {
-        return $patient->tenant_id === $user->tenant_id && $user->can('odontogram.update');
+        return $user->can('odontogram.update');
     }
 }

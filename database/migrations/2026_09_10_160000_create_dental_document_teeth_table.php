@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Collega un documento clinico a uno o più denti (notazione FDI) — non
      * un classico many-to-many fra due entità: il "dente" non è mai una
@@ -23,7 +25,6 @@ return new class extends Migration
     {
         Schema::create('dental_document_teeth', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('document_id')->constrained('dental_documents')->restrictOnDelete();
 
             // Notazione FDI/ISO 3950 — vedi FdiToothNumbers. Non FK verso
@@ -34,7 +35,7 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
 
             $table->unique(['document_id', 'tooth_number']);
-            $table->index(['tenant_id', 'tooth_number']);
+            $table->index('tooth_number');
         });
     }
 

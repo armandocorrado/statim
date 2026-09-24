@@ -48,7 +48,7 @@ class UpdatePatientRequest extends FormRequest
             'source' => ['nullable', new Enum(PatientSource::class)],
             'guardian_patient_id' => [
                 'nullable', 'ulid',
-                Rule::exists('patients', 'id')->where('tenant_id', $this->user()->tenant_id),
+                Rule::exists('patients', 'id'),
                 Rule::notIn([$this->route('patient')->id]),
             ],
             'guardian_relationship' => ['nullable', 'string', 'max:255'],

@@ -4,7 +4,7 @@ namespace App\Modules\Dental\Models;
 
 use App\Core\Audit\Concerns\Auditable;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use App\Modules\Dental\Enums\DentalRecordSection;
 use Database\Factories\DentalDocumentFactory;
@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Storage;
 ])]
 class DentalDocument extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids;
+    use Auditable, UsesTenantConnection, HasFactory, HasUlids;
 
     /**
      * Coincide con i mime accettati in upload da StoreDentalDocumentRequest

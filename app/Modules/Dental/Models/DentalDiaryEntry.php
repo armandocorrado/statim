@@ -4,7 +4,7 @@ namespace App\Modules\Dental\Models;
 
 use App\Core\Audit\Concerns\Auditable;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use App\Modules\Dental\Enums\DentalRecordSection;
 use Database\Factories\DentalDiaryEntryFactory;
@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['patient_id', 'operator_id', 'entry_date', 'section', 'content'])]
 class DentalDiaryEntry extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids;
+    use Auditable, UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

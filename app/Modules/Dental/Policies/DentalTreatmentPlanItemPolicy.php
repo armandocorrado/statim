@@ -19,17 +19,16 @@ class DentalTreatmentPlanItemPolicy
 {
     public function createFor(User $user, DentalTreatmentPlan $plan): bool
     {
-        return $plan->tenant_id === $user->tenant_id && TreatmentPlanAccessChecker::canManageAny($user);
+        return TreatmentPlanAccessChecker::canManageAny($user);
     }
 
     public function update(User $user, DentalTreatmentPlanItem $item): bool
     {
-        return $item->tenant_id === $user->tenant_id && TreatmentPlanAccessChecker::canManageAny($user);
+        return TreatmentPlanAccessChecker::canManageAny($user);
     }
 
     public function delete(User $user, DentalTreatmentPlanItem $item): bool
     {
-        return $item->tenant_id === $user->tenant_id
-            && TreatmentPlanAccessChecker::canManageItem($user, $item->serviceCatalogItem->category);
+        return TreatmentPlanAccessChecker::canManageItem($user, $item->serviceCatalogItem->category);
     }
 }

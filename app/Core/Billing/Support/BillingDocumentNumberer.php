@@ -3,14 +3,14 @@
 namespace App\Core\Billing\Support;
 
 use App\Core\Billing\Models\BillingDocumentCounter;
-use App\Core\Tenancy\Models\Tenant;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
- * Assegna numeri progressivi, senza buchi, per tenant+anno (si azzera il
- * 1° gennaio). DEVE essere chiamato dentro una DB::transaction() già
- * aperta dal chiamante — qui dentro si limita a lockare e incrementare la
- * riga contatore, non apre una propria transazione.
+ * Assegna numeri progressivi, senza buchi, per anno (si azzera il 1°
+ * gennaio) — un database per studio, non serve più scopare per tenant.
+ * DEVE essere chiamato dentro una DB::transaction() già aperta dal
+ * chiamante — qui dentro si limita a lockare e incrementare la riga
+ * contatore, non apre una propria transazione.
  *
  * Perché una tabella contatore dedicata e non un semplice
  * MAX(document_number)+1: quest'ultimo, anche con lockForUpdate(), non
@@ -22,20 +22,18 @@ use Illuminate\Database\UniqueConstraintViolationException;
  */
 class BillingDocumentNumberer
 {
-    public static function next(Tenant $tenant, int $year): int
+    public static function next(int $year): int
     {
-        $counter = self::lockCounterRow($tenant, $year);
+        $counter = self::lockCounterRow($year);
 
         if (! $counter) {
             try {
-                $counter = new BillingDocumentCounter(['year' => $year, 'next_number' => 1]);
-                $counter->tenant_id = $tenant->id;
-                $counter->save();
+                $counter = BillingDocumentCounter::create(['year' => $year, 'next_number' => 1]);
             } catch (UniqueConstraintViolationException) {
                 // Un'altra transazione concorrente l'ha creata per prima
                 // (stessa finestra di corsa critica del primo documento
                 // dell'anno) — lockiamo la sua riga e procediamo da lì.
-                $counter = self::lockCounterRow($tenant, $year);
+                $counter = self::lockCounterRow($year);
             }
         }
 
@@ -46,10 +44,9 @@ class BillingDocumentNumberer
         return $number;
     }
 
-    private static function lockCounterRow(Tenant $tenant, int $year): ?BillingDocumentCounter
+    private static function lockCounterRow(int $year): ?BillingDocumentCounter
     {
         return BillingDocumentCounter::query()
-            ->where('tenant_id', $tenant->id)
             ->where('year', $year)
             ->lockForUpdate()
             ->first();

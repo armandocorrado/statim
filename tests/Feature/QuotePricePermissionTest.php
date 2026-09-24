@@ -3,13 +3,11 @@
 use App\Core\Audit\Models\AuditLog;
 use App\Core\Patients\Models\Patient;
 use App\Core\Quotes\Models\Quote;
-use App\Core\Tenancy\Models\Tenant;
 
 test('an odontoiatra without the permission cannot edit quote prices', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($odontoiatra)->put("/quotes/{$quote->id}", [
         'lines' => [['description' => 'Otturazione', 'quantity' => 1, 'unit_price' => 90]],
@@ -17,12 +15,11 @@ test('an odontoiatra without the permission cannot edit quote prices', function 
 });
 
 test('admin can grant the price-edit permission to a specific odontoiatra, who can then edit prices', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $otherOdontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $otherOdontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($admin)->patch("/users/{$odontoiatra->id}/quote-price-permission", [
         'enabled' => true,
@@ -42,12 +39,11 @@ test('admin can grant the price-edit permission to a specific odontoiatra, who c
 });
 
 test('an odontoiatra enabled to edit prices still cannot issue, delete, or transition the quote', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $draftQuote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    $issuedQuote = Quote::factory()->issued()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $draftQuote = Quote::factory()->create(['patient_id' => $patient->id]);
+    $issuedQuote = Quote::factory()->issued()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($admin)->patch("/users/{$odontoiatra->id}/quote-price-permission", ['enabled' => true]);
 
@@ -59,11 +55,10 @@ test('an odontoiatra enabled to edit prices still cannot issue, delete, or trans
 });
 
 test('igienista can also be individually enabled to edit prices', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $admin = userWithRole('admin');
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
+    $quote = Quote::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($admin)->patch("/users/{$igienista->id}/quote-price-permission", [
         'enabled' => true,
@@ -75,9 +70,8 @@ test('igienista can also be individually enabled to edit prices', function () {
 });
 
 test('only admin can grant or revoke the price-edit permission', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $segreteria = userWithRole('segreteria');
+    $odontoiatra = userWithRole('odontoiatra');
 
     $this->actingAs($segreteria)->patch("/users/{$odontoiatra->id}/quote-price-permission", [
         'enabled' => true,
@@ -89,10 +83,9 @@ test('only admin can grant or revoke the price-edit permission', function () {
 });
 
 test('the permission cannot be granted to a non-dentist role', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $segreteria = userForTenant($tenant, 'segreteria');
-    $aso = userForTenant($tenant, 'aso');
+    $admin = userWithRole('admin');
+    $segreteria = userWithRole('segreteria');
+    $aso = userWithRole('aso');
 
     $this->actingAs($admin)->patch("/users/{$segreteria->id}/quote-price-permission", [
         'enabled' => true,
@@ -104,9 +97,8 @@ test('the permission cannot be granted to a non-dentist role', function () {
 });
 
 test('granting and revoking the price-edit permission is recorded in the audit log', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
+    $admin = userWithRole('admin');
+    $odontoiatra = userWithRole('odontoiatra');
 
     $this->actingAs($admin)->patch("/users/{$odontoiatra->id}/quote-price-permission", ['enabled' => true]);
 
@@ -124,19 +116,4 @@ test('granting and revoking the price-edit permission is recorded in the audit l
         ->firstOrFail();
     expect($revokeLog->new_values)->toBe(['treatment_plans.prices.edit' => false])
         ->and($revokeLog->old_values)->toBe(['treatment_plans.prices.edit' => true]);
-});
-
-test('the permission cannot be granted across tenants', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $adminA = userForTenant($tenantA, 'admin');
-    $odontoiatraB = userForTenant($tenantB, 'odontoiatra');
-
-    // Il model binding implicito su {user} precede il middleware `tenant`
-    // (SubstituteBindings è nel gruppo web globale) — la vera garanzia è
-    // la Policy (403), non il binding stesso, stesso principio già
-    // documentato per Patient in CLAUDE.md.
-    $this->actingAs($adminA)->patch("/users/{$odontoiatraB->id}/quote-price-permission", [
-        'enabled' => true,
-    ])->assertForbidden();
 });

@@ -3,12 +3,10 @@
 use App\Core\Audit\Models\AuditLog;
 use App\Core\Consents\Models\Consent;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 
 test('admin can record a consent for a patient', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($admin)->post("/patients/{$patient->id}/consents", [
         'purpose' => 'marketing',
@@ -22,15 +20,13 @@ test('admin can record a consent for a patient', function () {
 
     $consent = Consent::where('patient_id', $patient->id)->firstOrFail();
     expect($consent->purpose)->toBe(\App\Core\Consents\Enums\ConsentPurpose::Marketing)
-        ->and($consent->tenant_id)->toBe($tenant->id)
         ->and($consent->recorded_by)->toBe($admin->id)
         ->and($consent->isActive())->toBeTrue();
 });
 
 test('odontoiatra cannot record a consent', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/consents", [
         'purpose' => 'marketing',
@@ -44,11 +40,9 @@ test('odontoiatra cannot record a consent', function () {
 });
 
 test('a duplicate active consent for the same purpose is rejected', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
     Consent::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'purpose' => 'cura',
     ]);
@@ -64,11 +58,9 @@ test('a duplicate active consent for the same purpose is rejected', function () 
 });
 
 test('admin can revoke an active consent and the row is preserved as history', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
     $consent = Consent::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
         'purpose' => 'cura',
     ]);
@@ -84,28 +76,10 @@ test('admin can revoke an active consent and the row is preserved as history', f
     $this->assertDatabaseHas('consents', ['id' => $consent->id]);
 });
 
-test('a consent cannot be revoked across tenants', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $adminA = userForTenant($tenantA, 'admin');
-    $patientB = Patient::factory()->create(['tenant_id' => $tenantB->id]);
-    $consentB = Consent::factory()->create([
-        'tenant_id' => $tenantB->id,
-        'patient_id' => $patientB->id,
-    ]);
-
-    $response = $this->actingAs($adminA)->patch("/patients/{$patientB->id}/consents/{$consentB->id}/revoke");
-
-    $response->assertForbidden();
-    expect($consentB->fresh()->isActive())->toBeTrue();
-});
-
 test('a minor patient consent is attributed to their registered guardian', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $guardian = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $guardian = Patient::factory()->create();
     $minor = Patient::factory()->create([
-        'tenant_id' => $tenant->id,
         'date_of_birth' => now()->subYears(10),
         'guardian_patient_id' => $guardian->id,
     ]);
@@ -122,11 +96,9 @@ test('a minor patient consent is attributed to their registered guardian', funct
 });
 
 test('an adult patient with a guardian_patient_id set for billing consents for themselves', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $billingPayer = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $billingPayer = Patient::factory()->create();
     $adult = Patient::factory()->create([
-        'tenant_id' => $tenant->id,
         'date_of_birth' => now()->subYears(40),
         'guardian_patient_id' => $billingPayer->id,
         'guardian_relationship' => 'azienda',
@@ -144,9 +116,8 @@ test('an adult patient with a guardian_patient_id set for billing consents for t
 });
 
 test('granting and revoking a consent are recorded in the audit log', function () {
-    $tenant = Tenant::factory()->create();
-    $admin = userForTenant($tenant, 'admin');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $admin = userWithRole('admin');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($admin)->post("/patients/{$patient->id}/consents", [
         'purpose' => 'marketing',

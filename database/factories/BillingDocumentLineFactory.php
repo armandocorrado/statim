@@ -20,7 +20,6 @@ class BillingDocumentLineFactory extends Factory
         $unitPrice = fake()->randomFloat(2, 20, 200);
 
         return [
-            'tenant_id' => Tenant::factory(),
             'billing_document_id' => BillingDocument::factory(),
             'description' => fake()->sentence(3),
             'quantity' => $quantity,

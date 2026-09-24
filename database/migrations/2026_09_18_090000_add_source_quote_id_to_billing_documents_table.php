@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * A differenza di `Quote.source_treatment_plan_id` (riferimento OPACO
      * verso il verticale Dental, nessuna FK) questo è un legame Core↔Core:

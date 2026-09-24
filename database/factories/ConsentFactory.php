@@ -21,7 +21,6 @@ class ConsentFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'patient_id' => Patient::factory(),
             'given_by_patient_id' => null,
             'purpose' => ConsentPurpose::Cura,

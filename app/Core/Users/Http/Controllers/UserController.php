@@ -4,6 +4,7 @@ namespace App\Core\Users\Http\Controllers;
 
 use App\Core\Audit\Support\AuditRecorder;
 use App\Core\Quotes\Policies\QuotePolicy;
+use App\Core\Tenancy\Support\TenantConnectionResolver;
 use App\Core\Users\Http\Requests\InviteUserRequest;
 use App\Core\Users\Http\Requests\UpdateUserQuotePricePermissionRequest;
 use App\Core\Users\Http\Requests\UpdateUserRoleRequest;
@@ -17,9 +18,8 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
+use App\Core\Users\Models\Permission;
+use App\Core\Users\Models\Role;
 
 class UserController extends Controller
 {
@@ -40,8 +40,7 @@ class UserController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        $roles = Role::where('tenant_id', $request->user()->tenant_id)
-            ->where('guard_name', 'web')
+        $roles = Role::where('guard_name', 'web')
             ->orderBy('name')
             ->pluck('name');
 
@@ -63,16 +62,14 @@ class UserController extends Controller
         $invitation->save();
 
         Notification::route('mail', $invitation->email)
-            ->notify(new UserInvited($request->user()->tenant, $plainTextToken));
+            ->notify(new UserInvited(app(TenantConnectionResolver::class)->current(), $plainTextToken));
 
         return to_route('users.index')->with('success', 'Invito inviato.');
     }
 
-    public function destroyInvitation(Request $request, Invitation $invitation): RedirectResponse
+    public function destroyInvitation(Invitation $invitation): RedirectResponse
     {
         $this->authorize('invite', User::class);
-
-        abort_if($invitation->tenant_id !== $request->user()->tenant_id, 404);
 
         $invitation->delete();
 
@@ -83,7 +80,6 @@ class UserController extends Controller
     {
         $oldRoles = $user->getRoleNames()->all();
 
-        app(PermissionRegistrar::class)->setPermissionsTeamId($user->tenant_id);
         $user->syncRoles([$request->validated('role')]);
 
         AuditRecorder::record(
@@ -118,10 +114,7 @@ class UserController extends Controller
 
     /**
      * Concede/revoca treatment_plans.prices.edit DIRETTAMENTE all'utente
-     * — mai a un ruolo. Stesso meccanismo team-scoped di
-     * spatie/laravel-permission già usato per i ruoli (model_has_permissions
-     * ha la stessa colonna tenant_id di model_has_roles), stesso pattern
-     * di audit di updateRole().
+     * — mai a un ruolo. Stesso pattern di audit di updateRole().
      */
     public function updateQuotePricePermission(UpdateUserQuotePricePermissionRequest $request, User $user): RedirectResponse
     {
@@ -132,8 +125,6 @@ class UserController extends Controller
         // c'è ancora — capita al primo utilizzo in assoluto, dato che
         // nessun ruolo la registra mai (vedi RoleGovernanceTest).
         Permission::findOrCreate($permission, 'web');
-
-        app(PermissionRegistrar::class)->setPermissionsTeamId($user->tenant_id);
 
         $wasEnabled = $user->hasDirectPermission($permission);
         $enabled = $request->boolean('enabled');

@@ -80,7 +80,6 @@ class DentalTreatmentPlanItemController extends Controller
         foreach (array_unique($teeth) as $toothNumber) {
             $tooth = new DentalTreatmentPlanItemTooth(['tooth_number' => $toothNumber]);
             $tooth->treatment_plan_item_id = $item->id;
-            $tooth->tenant_id = $item->tenant_id;
             $tooth->save();
         }
     }

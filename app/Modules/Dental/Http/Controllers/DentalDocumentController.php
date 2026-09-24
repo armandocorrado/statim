@@ -16,9 +16,9 @@ class DentalDocumentController extends Controller
     /**
      * Il file va sul disco `local` (privato di default in Laravel, mai
      * raggiungibile via URL — vedi config/filesystems.php), non sul disco
-     * `public`. Path con tenant_id/patient_id per organizzazione, ma la
-     * vera protezione è l'autorizzazione sulla rotta di download, non
-     * l'imprevedibilità del path.
+     * `public`. Path con patient_id (ULID, unico a prescindere dallo
+     * studio) per organizzazione, ma la vera protezione è l'autorizzazione
+     * sulla rotta di download, non l'imprevedibilità del path.
      */
     public function store(StoreDentalDocumentRequest $request, Patient $patient): RedirectResponse
     {
@@ -26,7 +26,7 @@ class DentalDocumentController extends Controller
         $file = $request->file('file');
 
         $path = $file->storeAs(
-            "dental-documents/{$patient->tenant_id}/{$patient->id}",
+            "dental-documents/{$patient->id}",
             Str::ulid().'.'.$file->getClientOriginalExtension(),
             'local',
         );
@@ -37,7 +37,6 @@ class DentalDocumentController extends Controller
             'description' => $data['description'] ?? null,
         ]);
         $document->patient_id = $patient->id;
-        $document->tenant_id = $patient->tenant_id;
         $document->file_path = $path;
         $document->original_filename = $file->getClientOriginalName();
         $document->mime_type = $file->getClientMimeType();
@@ -48,7 +47,6 @@ class DentalDocumentController extends Controller
         foreach (array_unique($data['teeth'] ?? []) as $toothNumber) {
             $link = new DentalDocumentTooth(['tooth_number' => $toothNumber]);
             $link->document_id = $document->id;
-            $link->tenant_id = $patient->tenant_id;
             $link->save();
         }
 

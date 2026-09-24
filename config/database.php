@@ -93,16 +93,23 @@ return [
             ]) : [],
         ],
 
-        // DB dello studio "corrente": connessione dinamica, nessun database di
-        // default. App\Core\Tenancy\Support\TenantConnectionResolver imposta
-        // 'database' a runtime prima di ogni uso. Un accesso prima della
-        // risoluzione deve fallire rumorosamente, non collegarsi a un DB sbagliato.
+        // DB dello studio "corrente": connessione dinamica.
+        // App\Core\Tenancy\Support\TenantConnectionResolver imposta 'database'
+        // a runtime prima di ogni uso. In sviluppo/produzione (driver mysql)
+        // resta null finche' non risolta apposta, per fallire rumorosamente
+        // invece di collegarsi a un DB sbagliato. Nei test (driver sqlite)
+        // ha un fallback a ':memory:' condiviso — stesso principio di
+        // 'central' sopra — cosi' la maggior parte dei test (che non
+        // testano davvero l'isolamento multi-DB) funziona senza dover
+        // risolvere esplicitamente un tenant; i test che vogliono un
+        // isolamento vero (vedi TenantConnectionResolverTest) sovrascrivono
+        // 'database' a runtime con un file sqlite reale.
         'tenant' => [
             'driver' => env('DB_TENANT_CONNECTION', env('DB_CONNECTION', 'sqlite')),
             'url' => null,
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_TENANT_DATABASE'),
+            'database' => env('DB_TENANT_DATABASE', env('DB_CONNECTION', 'sqlite') === 'sqlite' ? ':memory:' : null),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),

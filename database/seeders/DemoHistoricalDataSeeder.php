@@ -14,24 +14,23 @@ use App\Core\Patients\Models\Patient;
 use App\Core\Quotes\Enums\QuoteStatus;
 use App\Core\Quotes\Models\Quote;
 use App\Core\Quotes\Models\ServiceCatalogItem;
-use App\Core\Tenancy\Models\Tenant;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Storico demo su alcuni mesi passati — senza questo, i grafici della
  * dashboard admin (fatturato mensile, appuntamenti nel tempo, tasso di
- * accettazione) non hanno nulla da raccontare: un tenant appena seedato
- * ha solo gli appuntamenti di oggi/domani di DemoAppointmentSeeder e
- * zero fatture/preventivi. Deve girare DOPO DemoAppointmentSeeder — crea
- * solo appuntamenti nel passato (mai oggi/futuro), così non interferisce
- * con la sua idempotenza ("skip se l'operatore ha già un appuntamento").
+ * accettazione) non hanno nulla da raccontare: uno studio appena seedato
+ * ha solo gli appuntamenti di oggi/domani di DemoAppointmentSeeder e zero
+ * fatture/preventivi. Opera sullo studio la cui connessione 'tenant' è già
+ * risolta dal chiamante (DatabaseSeeder). Deve girare DOPO
+ * DemoAppointmentSeeder — crea solo appuntamenti nel passato (mai
+ * oggi/futuro), così non interferisce con la sua idempotenza ("skip se
+ * l'operatore ha già un appuntamento").
  *
- * Idempotente: salta un tenant che ha già un documento di fatturazione
+ * Idempotente: salta uno studio che ha già un documento di fatturazione
  * emesso più vecchio di 2 mesi — nessun'altra passata di seeding
  * manuale/demo backdata così tanto, quindi è un marcatore sicuro.
  */
@@ -48,34 +47,20 @@ class DemoHistoricalDataSeeder extends Seeder
 
     public function run(): void
     {
-        $this->seedForTenant('studio-rossi');
-        $this->seedForTenant('studio-bianchi');
-    }
-
-    private function seedForTenant(string $slug): void
-    {
-        $tenant = Tenant::where('slug', $slug)->first();
-
-        if (! $tenant) {
+        if ($this->alreadySeeded()) {
             return;
         }
 
-        if ($this->alreadySeeded($tenant)) {
-            return;
-        }
-
-        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-
-        $admin = User::where('tenant_id', $tenant->id)->role('admin')->first();
-        $odontoiatri = User::where('tenant_id', $tenant->id)->role('odontoiatra')->orderBy('name')->get();
+        $admin = User::role('admin')->first();
+        $odontoiatri = User::role('odontoiatra')->orderBy('name')->get();
 
         if (! $admin || $odontoiatri->isEmpty()) {
             return;
         }
 
-        $patients = $this->ensurePatientPool($tenant, $admin);
-        $appointmentTypes = AppointmentType::where('tenant_id', $tenant->id)->get();
-        $serviceCatalogItems = ServiceCatalogItem::where('tenant_id', $tenant->id)->where('is_active', true)->get();
+        $patients = $this->ensurePatientPool($admin);
+        $appointmentTypes = AppointmentType::all();
+        $serviceCatalogItems = ServiceCatalogItem::where('is_active', true)->get();
 
         if ($patients->isEmpty() || $serviceCatalogItems->isEmpty()) {
             return;
@@ -89,36 +74,33 @@ class DemoHistoricalDataSeeder extends Seeder
             // racconterebbe nulla.
             $growth = 0.7 + ($index / (self::HISTORY_MONTHS - 1)) * 0.6;
 
-            $this->seedAppointmentsForMonth($tenant, $admin, $odontoiatri, $patients, $appointmentTypes, $window, $growth);
-            $this->seedBillingDocumentsForMonth($tenant, $admin, $patients, $serviceCatalogItems, $window, $growth);
-            $this->seedQuotesForMonth($tenant, $admin, $patients, $serviceCatalogItems, $window, $growth);
+            $this->seedAppointmentsForMonth($admin, $odontoiatri, $patients, $appointmentTypes, $window, $growth);
+            $this->seedBillingDocumentsForMonth($admin, $patients, $serviceCatalogItems, $window, $growth);
+            $this->seedQuotesForMonth($admin, $patients, $serviceCatalogItems, $window, $growth);
         }
     }
 
-    private function alreadySeeded(Tenant $tenant): bool
+    private function alreadySeeded(): bool
     {
-        return BillingDocument::where('tenant_id', $tenant->id)
-            ->whereDate('issued_at', '<', CarbonImmutable::now()->subMonths(2)->toDateString())
-            ->exists();
+        return BillingDocument::where('issued_at', '<', CarbonImmutable::now()->subMonths(2)->toDateString())->exists();
     }
 
     /**
      * @return \Illuminate\Support\Collection<int, Patient>
      */
-    private function ensurePatientPool(Tenant $tenant, User $admin): \Illuminate\Support\Collection
+    private function ensurePatientPool(User $admin): \Illuminate\Support\Collection
     {
-        $existing = Patient::where('tenant_id', $tenant->id)->get();
+        $existing = Patient::all();
         $missing = self::TARGET_PATIENT_COUNT - $existing->count();
 
         if ($missing > 0) {
             Patient::factory($missing)->create([
-                'tenant_id' => $tenant->id,
                 'created_by' => $admin->id,
                 'updated_by' => $admin->id,
             ]);
         }
 
-        return Patient::where('tenant_id', $tenant->id)->get();
+        return Patient::all();
     }
 
     /**
@@ -150,7 +132,6 @@ class DemoHistoricalDataSeeder extends Seeder
      * @param  array{start: CarbonImmutable, end: CarbonImmutable}  $window
      */
     private function seedAppointmentsForMonth(
-        Tenant $tenant,
         User $admin,
         \Illuminate\Support\Collection $odontoiatri,
         \Illuminate\Support\Collection $patients,
@@ -195,7 +176,6 @@ class DemoHistoricalDataSeeder extends Seeder
                         'start_at' => $start,
                         'end_at' => (clone $start)->addMinutes(30),
                     ]);
-                    $appointment->tenant_id = $tenant->id;
                     $appointment->status = fake()->randomElement($statusWeights);
                     $appointment->created_by = $admin->id;
                     $appointment->timestamps = false;
@@ -215,7 +195,6 @@ class DemoHistoricalDataSeeder extends Seeder
      * @param  array{start: CarbonImmutable, end: CarbonImmutable}  $window
      */
     private function seedBillingDocumentsForMonth(
-        Tenant $tenant,
         User $admin,
         \Illuminate\Support\Collection $patients,
         \Illuminate\Support\Collection $serviceCatalogItems,
@@ -229,9 +208,8 @@ class DemoHistoricalDataSeeder extends Seeder
             $patient = $patients->random();
             $lines = $this->randomServiceLines($serviceCatalogItems);
 
-            DB::transaction(function () use ($tenant, $admin, $patient, $lines, $issuedAt) {
+            DB::transaction(function () use ($admin, $patient, $lines, $issuedAt) {
                 $document = new BillingDocument(['patient_id' => $patient->id]);
-                $document->tenant_id = $tenant->id;
                 $document->status = BillingDocumentStatus::Draft;
                 $document->created_by = $admin->id;
                 $document->recipient_name = "{$patient->first_name} {$patient->last_name}";
@@ -255,7 +233,6 @@ class DemoHistoricalDataSeeder extends Seeder
                         'sort_order' => $sortOrder,
                     ]);
                     $newLine->line_total = round($line['unit_price'], 2);
-                    $newLine->tenant_id = $tenant->id;
                     $newLine->save();
                 }
 
@@ -265,7 +242,7 @@ class DemoHistoricalDataSeeder extends Seeder
                     'vat_rate' => $line->vat_rate,
                 ]));
 
-                $document->document_number = BillingDocumentNumberer::next($tenant, (int) $issuedAt->format('Y'));
+                $document->document_number = BillingDocumentNumberer::next((int) $issuedAt->format('Y'));
                 $document->document_year = (int) $issuedAt->format('Y');
                 $document->issued_at = $issuedAt->toDateString();
                 $document->total_taxable = $totals['taxable'];
@@ -286,7 +263,6 @@ class DemoHistoricalDataSeeder extends Seeder
      * @param  array{start: CarbonImmutable, end: CarbonImmutable}  $window
      */
     private function seedQuotesForMonth(
-        Tenant $tenant,
         User $admin,
         \Illuminate\Support\Collection $patients,
         \Illuminate\Support\Collection $serviceCatalogItems,
@@ -301,7 +277,6 @@ class DemoHistoricalDataSeeder extends Seeder
             $lines = $this->randomServiceLines($serviceCatalogItems, $serviceCatalogItems->first());
 
             $quote = new Quote(['patient_id' => $patient->id]);
-            $quote->tenant_id = $tenant->id;
             $quote->status = QuoteStatus::Draft;
             $quote->created_by = $admin->id;
             $quote->timestamps = false;
@@ -320,7 +295,6 @@ class DemoHistoricalDataSeeder extends Seeder
                     'sort_order' => $sortOrder,
                 ]);
                 $newLine->line_total = round($line['unit_price'], 2);
-                $newLine->tenant_id = $tenant->id;
                 $newLine->save();
             }
 
@@ -392,10 +366,10 @@ class DemoHistoricalDataSeeder extends Seeder
     }
 
     /**
-     * 1-3 prestazioni casuali dal listino del tenant, con una piccola
-     * variazione di prezzo (±10%) — altrimenti ogni fattura/preventivo
-     * con la stessa prestazione avrebbe l'identico importo, poco
-     * credibile per un grafico di andamento.
+     * 1-3 prestazioni casuali dal listino, con una piccola variazione di
+     * prezzo (±10%) — altrimenti ogni fattura/preventivo con la stessa
+     * prestazione avrebbe l'identico importo, poco credibile per un
+     * grafico di andamento.
      *
      * @param  \Illuminate\Support\Collection<int, ServiceCatalogItem>  $serviceCatalogItems
      * @return list<array{service_catalog_item_id: string, description: string, unit_price: float}>

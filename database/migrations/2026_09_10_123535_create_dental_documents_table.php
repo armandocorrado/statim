@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Nessuna rotta di update/delete: un documento clinico caricato (referto,
      * radiografia, foto) non si sostituisce né si cancella, stesso principio
@@ -16,7 +18,6 @@ return new class extends Migration
     {
         Schema::create('dental_documents', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
 
             $table->string('section');
@@ -32,7 +33,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'patient_id', 'section']);
+            $table->index(['patient_id', 'section']);
         });
     }
 

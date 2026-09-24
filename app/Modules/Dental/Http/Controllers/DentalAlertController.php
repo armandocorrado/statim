@@ -15,7 +15,6 @@ class DentalAlertController extends Controller
     {
         $alert = new DentalAlert($request->validated());
         $alert->patient_id = $patient->id;
-        $alert->tenant_id = $patient->tenant_id;
         $alert->created_by = $request->user()->id;
         $alert->save();
 

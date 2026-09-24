@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('appointment_types', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
 
             $table->string('name');
             $table->string('color', 7);
@@ -18,7 +19,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'name']);
+            $table->unique('name');
         });
     }
 

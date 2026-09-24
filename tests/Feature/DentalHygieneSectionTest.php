@@ -1,21 +1,17 @@
 <?php
 
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Models\Tenant;
 use App\Modules\Dental\Models\DentalDiaryEntry;
 use App\Modules\Dental\Models\DentalDocument;
 
 test('igienista sees only hygiene-section diary entries', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     $hygieneEntry = DentalDiaryEntry::factory()->hygiene()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
     ]);
     DentalDiaryEntry::factory()->create([
-        'tenant_id' => $tenant->id,
         'patient_id' => $patient->id,
     ]); // general section
 
@@ -27,21 +23,19 @@ test('igienista sees only hygiene-section diary entries', function () {
 });
 
 test('odontoiatra sees both general and hygiene diary entries', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
-    DentalDiaryEntry::factory()->hygiene()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    DentalDiaryEntry::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    DentalDiaryEntry::factory()->hygiene()->create(['patient_id' => $patient->id]);
+    DentalDiaryEntry::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($odontoiatra)->get("/patients/{$patient->id}/dental")
         ->assertInertia(fn ($page) => $page->has('diaryEntries', 2));
 });
 
 test('igienista cannot add a general-section diary entry', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($igienista)->post("/patients/{$patient->id}/dental/diary", [
         'entry_date' => now()->toDateString(),
@@ -54,9 +48,8 @@ test('igienista cannot add a general-section diary entry', function () {
 });
 
 test('igienista can add a hygiene-section diary entry', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
     $response = $this->actingAs($igienista)->post("/patients/{$patient->id}/dental/diary", [
         'entry_date' => now()->toDateString(),
@@ -71,9 +64,8 @@ test('igienista can add a hygiene-section diary entry', function () {
 });
 
 test('odontoiatra can add a diary entry in either section', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
 
     $this->actingAs($odontoiatra)->post("/patients/{$patient->id}/dental/diary", [
         'entry_date' => now()->toDateString(),
@@ -85,22 +77,20 @@ test('odontoiatra can add a diary entry in either section', function () {
 });
 
 test('a diary entry has no update or delete route', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $entry = DentalDiaryEntry::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $patient = Patient::factory()->create();
+    $entry = DentalDiaryEntry::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($odontoiatra)->put("/patients/{$patient->id}/dental/diary/{$entry->id}")
         ->assertStatus(404);
 });
 
 test('igienista sees only hygiene-section documents', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
 
-    $hygieneDoc = DentalDocument::factory()->hygiene()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
-    DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $hygieneDoc = DentalDocument::factory()->hygiene()->create(['patient_id' => $patient->id]);
+    DentalDocument::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($igienista)->get("/patients/{$patient->id}/dental")
         ->assertInertia(fn ($page) => $page
@@ -110,10 +100,9 @@ test('igienista sees only hygiene-section documents', function () {
 });
 
 test('igienista cannot download a general-section document', function () {
-    $tenant = Tenant::factory()->create();
-    $igienista = userForTenant($tenant, 'igienista');
-    $patient = Patient::factory()->create(['tenant_id' => $tenant->id]);
-    $document = DentalDocument::factory()->create(['tenant_id' => $tenant->id, 'patient_id' => $patient->id]);
+    $igienista = userWithRole('igienista');
+    $patient = Patient::factory()->create();
+    $document = DentalDocument::factory()->create(['patient_id' => $patient->id]);
 
     $this->actingAs($igienista)->get("/patients/{$patient->id}/dental/documents/{$document->id}/download")
         ->assertForbidden();

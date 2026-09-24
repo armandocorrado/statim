@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('dental_anamneses', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('patient_id')->constrained()->restrictOnDelete();
 
             // Cifrati (contenuto clinico) — non sezionati: riguardano
@@ -24,7 +25,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'patient_id']);
+            $table->unique('patient_id');
         });
     }
 

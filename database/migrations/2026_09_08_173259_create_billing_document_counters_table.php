@@ -6,9 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * Tabella contatore dedicata, non un MAX(document_number)+1 al volo:
-     * una riga per tenant+anno che esiste SEMPRE una volta inizializzata,
+     * una riga per anno (un database per studio, non serve più scopare per
+     * tenant) che esiste SEMPRE una volta inizializzata,
      * così un SELECT ... FOR UPDATE ha sempre qualcosa da bloccare — a
      * differenza del controllo sovrapposizioni dell'Agenda, dove lockare
      * un set di righe potenzialmente vuoto (nessun appuntamento ancora in
@@ -20,13 +23,12 @@ return new class extends Migration
     {
         Schema::create('billing_document_counters', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->unsignedSmallInteger('year');
             $table->unsignedInteger('next_number')->default(1);
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'year']);
+            $table->unique(['year']);
         });
     }
 

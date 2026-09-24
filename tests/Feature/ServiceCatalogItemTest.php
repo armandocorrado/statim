@@ -1,11 +1,9 @@
 <?php
 
 use App\Core\Quotes\Models\ServiceCatalogItem;
-use App\Core\Tenancy\Models\Tenant;
 
 test('segreteria can create and update a service catalog item', function () {
-    $tenant = Tenant::factory()->create();
-    $segreteria = userForTenant($tenant, 'segreteria');
+    $segreteria = userWithRole('segreteria');
 
     $response = $this->actingAs($segreteria)->post('/service-catalog', [
         'name' => 'Sbiancamento',
@@ -34,9 +32,8 @@ test('segreteria can create and update a service catalog item', function () {
 });
 
 test('odontoiatra can view the catalog but not create or edit items', function () {
-    $tenant = Tenant::factory()->create();
-    $odontoiatra = userForTenant($tenant, 'odontoiatra');
-    $item = ServiceCatalogItem::factory()->create(['tenant_id' => $tenant->id]);
+    $odontoiatra = userWithRole('odontoiatra');
+    $item = ServiceCatalogItem::factory()->create();
 
     $this->actingAs($odontoiatra)->get('/service-catalog')->assertOk();
 
@@ -50,19 +47,7 @@ test('odontoiatra can view the catalog but not create or edit items', function (
 });
 
 test('aso cannot view the service catalog', function () {
-    $tenant = Tenant::factory()->create();
-    $aso = userForTenant($tenant, 'aso');
+    $aso = userWithRole('aso');
 
     $this->actingAs($aso)->get('/service-catalog')->assertForbidden();
-});
-
-test('a service catalog item cannot be updated across tenants', function () {
-    $tenantA = Tenant::factory()->create();
-    $tenantB = Tenant::factory()->create();
-    $segreteriaA = userForTenant($tenantA, 'segreteria');
-    $itemB = ServiceCatalogItem::factory()->create(['tenant_id' => $tenantB->id]);
-
-    $this->actingAs($segreteriaA)->put("/service-catalog/{$itemB->id}", [
-        'name' => 'hijack', 'base_price' => 1, 'is_active' => true,
-    ])->assertForbidden();
 });

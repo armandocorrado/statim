@@ -18,7 +18,6 @@ use App\Core\Agenda\Models\Appointment;
 class AppointmentOverlapChecker
 {
     public static function personIsBusy(
-        string $tenantId,
         string $personId,
         mixed $startAt,
         mixed $endAt,
@@ -26,7 +25,6 @@ class AppointmentOverlapChecker
         bool $lock = false,
     ): bool {
         $query = Appointment::query()
-            ->where('tenant_id', $tenantId)
             ->where(fn ($q) => $q->where('operator_id', $personId)->orWhere('assistant_id', $personId))
             ->when($excludingAppointmentId, fn ($q) => $q->where('id', '!=', $excludingAppointmentId))
             ->whereNotIn('status', array_map(fn ($s) => $s->value, AppointmentStatus::excludedFromOverlapCheck()))

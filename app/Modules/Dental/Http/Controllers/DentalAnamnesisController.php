@@ -14,7 +14,6 @@ class DentalAnamnesisController extends Controller
     {
         $anamnesis = DentalAnamnesis::firstOrNew(['patient_id' => $patient->id]);
         $anamnesis->fill($request->validated());
-        $anamnesis->tenant_id = $patient->tenant_id;
         $anamnesis->updated_by = $request->user()->id;
         $anamnesis->save();
 

@@ -5,7 +5,7 @@ namespace App\Core\Agenda\Models;
 use App\Core\Agenda\Enums\AppointmentStatus;
 use App\Core\Audit\Concerns\Auditable;
 use App\Core\Patients\Models\Patient;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class Appointment extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids;
+    use Auditable, UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     /**
      * `description` è testo libero congelato al momento della generazione
      * (es. "Otturazione — dente 16") — Core non modella mai i denti come
@@ -19,7 +21,6 @@ return new class extends Migration
     {
         Schema::create('quote_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('quote_id')->constrained()->cascadeOnDelete();
             $table->foreignUlid('service_catalog_item_id')->nullable()->constrained()->nullOnDelete();
 
@@ -41,8 +42,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('sort_order')->default(0);
 
             $table->timestamps();
-
-            $table->index(['tenant_id', 'quote_id']);
         });
     }
 

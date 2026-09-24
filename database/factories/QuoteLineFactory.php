@@ -17,7 +17,6 @@ class QuoteLineFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => Tenant::factory(),
             'quote_id' => Quote::factory(),
             'service_catalog_item_id' => null,
             'source_treatment_plan_item_id' => null,

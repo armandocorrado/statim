@@ -3,7 +3,7 @@
 namespace App\Core\Users\Models;
 
 use App\Core\Audit\Concerns\Auditable;
-use App\Core\Tenancy\Concerns\BelongsToTenant;
+use App\Core\Tenancy\Concerns\UsesTenantConnection;
 use App\Models\User;
 use Database\Factories\InvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,10 +13,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['tenant_id', 'email', 'role', 'token_hash', 'invited_by', 'expires_at'])]
+#[Fillable(['email', 'role', 'token_hash', 'invited_by', 'expires_at'])]
 class Invitation extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, HasUlids;
+    use Auditable, UsesTenantConnection, HasFactory, HasUlids;
 
     protected static function newFactory(): Factory
     {

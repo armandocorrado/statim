@@ -143,7 +143,6 @@ class QuoteController extends Controller
         $this->authorize('generateBillingDocument', $quote);
 
         $document = new BillingDocument(['patient_id' => $quote->patient_id]);
-        $document->tenant_id = $quote->tenant_id;
         $document->source_quote_id = $quote->id;
         $document->status = BillingDocumentStatus::Draft;
         $document->created_by = request()->user()->id;

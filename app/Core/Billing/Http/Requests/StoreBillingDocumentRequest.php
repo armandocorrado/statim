@@ -15,16 +15,14 @@ class StoreBillingDocumentRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = $this->user()->tenant_id;
-
         return [
             'patient_id' => [
                 'required', 'ulid',
-                Rule::exists('patients', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('patients', 'id'),
             ],
             'recipient_patient_id' => [
                 'nullable', 'ulid',
-                Rule::exists('patients', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('patients', 'id'),
             ],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.description' => ['required', 'string', 'max:255'],

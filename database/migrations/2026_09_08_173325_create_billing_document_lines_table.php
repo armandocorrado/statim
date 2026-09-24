@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    protected $connection = 'tenant';
+
     public function up(): void
     {
         Schema::create('billing_document_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('tenant_id')->index();
             $table->foreignUlid('billing_document_id')->constrained()->cascadeOnDelete();
 
             $table->string('description');
@@ -27,8 +28,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('sort_order')->default(0);
 
             $table->timestamps();
-
-            $table->index(['tenant_id', 'billing_document_id']);
         });
     }
 
